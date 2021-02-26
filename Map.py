@@ -16,6 +16,7 @@ class gridmap():
                     self.map.add_edge(((f"{i},{j}",f"{i},{j-1}")))
 
     def astar_find(self,cur,target):
+        pass
 
 
 
