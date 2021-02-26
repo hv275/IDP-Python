@@ -3,8 +3,15 @@ from controller import Robot
 
 class Dez(Robot):
     def __init__(self):
+        #inherit from Robot
         super().__init__()
+
+
+        #robot consts
         stepInt = 32
+
+        #todo change when I get the actual robot model
+        self.wheelRad = 0.4
 
         #initialise the distance sensor
         self.distSense = self.getDevice("ds_left")
@@ -21,7 +28,8 @@ class Dez(Robot):
             self.wheels[i].setVelocity(0.0)
 
 
-        #initialise GPS
+        #todo initialise GPS when sensor is mounted
+
 
 
 
@@ -33,6 +41,17 @@ class Dez(Robot):
     def setSpeed(self, vel):
         for i in self.wheels:
             i.setVelocity(vel)
+
+    def moveForward(self,dist):
+        #target is in radians
+        target = dist/self.wheelRad
+
+        for i in self.wheels:
+            i.setPosition(target)
+            i.setVelocity(2.5)
+
+
+
 
 
 

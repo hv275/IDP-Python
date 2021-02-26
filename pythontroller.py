@@ -25,7 +25,7 @@ while robot.step(timestep) != -1:
     #  val = ds.getValue()
 
     # Process sensor data here.
-    robot.setSpeed(10.0)
+    robot.moveForward(5)
     # Enter here functions to send actuator commands, like:
     #  motor.setPosition(10.0)
     pass
