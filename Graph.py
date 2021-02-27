@@ -16,6 +16,7 @@ class Graph(object):
         if graph_dict == None:
             graph_dict = {}
         self.__graph_dict = graph_dict
+        self.dict = graph_dict
 
     def vertices(self):
         """ returns the vertices of a graph """
@@ -35,15 +36,17 @@ class Graph(object):
             self.__graph_dict[vertex] = []
 
     def add_edge(self, edge):
-        """ assumes that edge is of type set, tuple or list;
+        """
             between two vertices can be multiple edges!
         """
-        edge = set(edge)
-        (vertex1, vertex2) = tuple(edge)
+
+        (vertex1, vertex2) = edge
         if vertex1 in self.__graph_dict:
             self.__graph_dict[vertex1].append(vertex2)
+            self.__graph_dict[vertex2].append(vertex1)
         else:
             self.__graph_dict[vertex1] = [vertex2]
+            self.__graph_dict[vertex2].append(vertex1)
 
     def __generate_edges(self):
         """ A static method generating the edges of the
