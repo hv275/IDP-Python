@@ -87,4 +87,4 @@ class gridmap():
 
 if __name__ == "__main__":
     map = gridmap(10, 10, 1)
-    print(map.alastair((0,0),(4,0)))
+    print(map.alastair((0,0),(4,4)))
