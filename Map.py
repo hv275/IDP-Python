@@ -75,6 +75,15 @@ class gridmap():
                 # Return None, no path is found
         return None
 
+    def directions(self,beg,end):
+        nodes = self.alastair(beg,end)
+        directions = []
+        for node in enumerate(nodes):
+            if node[0] == 0:
+                pass
+            else:
+                directions.append(tuple(map(lambda i, j: i - j, node[1], nodes[node[0]-1])))
+        return directions
 
 
 
@@ -86,5 +95,5 @@ class gridmap():
 
 
 if __name__ == "__main__":
-    map = gridmap(10, 10, 1)
-    print(map.alastair((0,0),(4,4)))
+    gridmapmap = gridmap(10, 10, 1)
+    print(gridmapmap.directions((0,0),(4,4)))

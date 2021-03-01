@@ -42,7 +42,7 @@ class Dez(Robot):
 
 
 
-    def readDist(self):
+    def getDist(self):
         return self.distSense.getValue()
 
 
@@ -100,10 +100,48 @@ class Dez(Robot):
         self.moveForward(3)
         print("Initialisation complete")
 
-    def uturn(self):
-        self.rightTurn()
-        self.moveForward(1,3)
-        self.rightTurn()
+    def uturn(self, dir = "n"):
+        #warning - this is only valid for the left handed robot
+        if dir == "n":
+            self.leftTurn()
+            self.moveForward(1,3)
+            self.leftTurn()
+        if dir == "s":
+            self.rightTurn()
+            self.moveForward()
+            self.rightTurn()
+
+    def isblock(self):
+        #code to check if it is a block
+        #probably just check for led with camera
+        #########
+        return 0
+
+
+    def sweep(self):
+        #arbitrary dist - change based on sensor
+        if self.getDist() < 200:
+            if not self.isblock:
+                self.uturn()
+            else:
+                pass
+                #check for colour
+                #insert code for claw here
+                #and return to base
+                #also work on bypassing the block
+        else:
+            self.moveForward(1)
+
+    def goto(self,dest):
+        pass
+        #turn to the correct direction depending on the direction you are facing
+        #follow a set of instructions as instructed by the navigator - basically north south directions
+        #use bearing for direction calculations
+        #I really need the model
+
+
+
+
 
 
 
