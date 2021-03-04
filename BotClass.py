@@ -1,162 +1,178 @@
 from controller import Robot
-
-class wheel:
-    def __init__(self,obj):
-        self.obj = obj
-        self.pos = 0
+import math
+from Map import gridmap
 
 
 class Dez(Robot):
     def __init__(self, colour="g"):
-        #inherit from Robot
+        # inherit from Robot
         super().__init__()
 
-
-        #robot consts
+        # robot consts
+        # not all may be needed
         stepInt = 32
         self.colour = colour
         self.direc = "north"
         self.initflag = 0
         self.defaultSpeed = 3
+        self.gridMap = None
 
 
-        #todo change when I get the actual robot model
-        self.wheelRad = 0.4
+        self.wheelRad = 0.05
 
-        #initialise the distance sensor
+        # initialise the distance sensor (currently commented out)
+        """
         self.distSense = self.getDevice("ds_left")
-        self.distSense.enable(32)
+        self.distSense.enable(32)"""
 
-
-
-        #inititialise wheels
+        # inititialise wheels
         self.wheels = []
-        wheelsNames = ['wheel1','wheel2']
+        wheelsNames = ['l_wheel', 'r_wheel']
         for i in range(len(wheelsNames)):
-            self.wheels.append(wheel(self.getDevice(wheelsNames[i])))
-            self.wheels[i].obj.setPosition(float("inf"))
-            self.wheels[i].obj.setVelocity(0.0)
+            self.wheels.append(self.getDevice(wheelsNames[i]))
+            self.wheels[i].setPosition(float("inf"))
+            self.wheels[i].setVelocity(0.0)
 
+        # initialise the claw
+        self.claw = self.getDevice("arm")
+        self.claw.setPosition(float("inf"))
+        self.claw.setVelocity(0)
+        # self.clawhead = self.getDevice("claw_motor")
+        # self.clawhead.setPosition(float("inf"))
+        # self.clawhead.setVelocity(0)
 
-        #todo initialise GPS when sensor is mounted
-
-
+        # todo initialise GPS when sensor is mounted
 
     def getDist(self):
         return self.distSense.getValue()
 
-
-    def moveForward(self,dist,vel=None):
-        if vel == None:
-            vel = self.defaultSpeed
-        end_time = self.getTime() + (dist/self.wheelRad)/vel
-        while self.step(32) != -1:
+    def moveArmDown(self):
+        end_time = self.getTime() + 1
+        while self.step(32) != 1:
             if self.getTime() < end_time:
-                for i in self.wheels:
-                    i.obj.setVelocity(vel)
+                self.claw.setVelocity(0.2)
+                # self.clawhead.setVelocity(0.2)
             else:
-                for i in self.wheels:
-                    i.obj.setVelocity(0)
+                # self.clawhead.setVelocity(0)
+                self.claw.setVelocity(0)
+                break
+
+    def moveArmUp(self):
+        end_time = self.getTime() + 1
+        print(self.getTime())
+        print(end_time)
+        while self.step(32) != 1:
+            if self.getTime() < end_time:
+                self.claw.setVelocity(-0.2)
+                # self.clawhead.setVelocity(-0.15)
+            else:
+                # self.clawhead.setVelocity(0)
+                self.claw.setVelocity(0)
+                # self.clawhead.setVelocity(0)
                 print("done")
                 break
 
-    def rightTurn(self, vel = None):
+    def moveForward(self, dist, vel=None):
         if vel == None:
             vel = self.defaultSpeed
-        # todo make a function of geometry
-        dist = 1.1
         end_time = self.getTime() + (dist / self.wheelRad) / vel
         while self.step(32) != -1:
             if self.getTime() < end_time:
-                self.wheels[0].obj.setVelocity(vel)
-                self.wheels[1].obj.setVelocity(-vel)
+                for i in self.wheels:
+                    i.setVelocity(vel)
             else:
                 for i in self.wheels:
-                    i.obj.setVelocity(0)
+                    i.setVelocity(0)
                 print("done")
                 break
 
-    def leftTurn(self, vel = None):
-        #turn left
+    def rightTurn(self, vel=None, angle=90):
+        # configured for 90 degrees only
+        # issues with slip during simulation, hard to precisely obtain turning times
+        # numbers have been simply tunes for 90 deg turn at 3rad/s
+        # can make into other values once we get the compass on
+        angle = math.radians(angle)
+        arc = angle*0.08*1.8715
+
         if vel == None:
             vel = self.defaultSpeed
         # todo make a function of geometry
-        dist = 1.11
-        end_time = self.getTime() + (dist / self.wheelRad) / vel
-        while self.step(32) != -1:
+        end_time = self.getTime() + (arc / self.wheelRad) / vel
+        while self.step(16) != -1:
+            print(self.getTime())
             if self.getTime() < end_time:
-                self.wheels[0].obj.setVelocity(-vel)
-                self.wheels[1].obj.setVelocity(vel)
+                self.wheels[0].setVelocity(vel)
+                self.wheels[1].setVelocity(-vel)
             else:
                 for i in self.wheels:
-                    i.obj.setVelocity(0)
+                    i.setVelocity(0)
+                print("done")
+                break
+
+    def leftTurn(self, vel=None, angle=90):
+        # turn left
+        angle = math.radians(angle)
+        arc = angle*0.08*1.8715
+
+        if vel == None:
+            vel = self.defaultSpeed
+        # todo make a function of geometry
+        end_time = self.getTime() + (arc / self.wheelRad) / vel
+        while self.step(16) != -1:
+            if self.getTime() < end_time:
+                self.wheels[0].setVelocity(-vel)
+                self.wheels[1].setVelocity(vel)
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
                 print("done")
                 break
 
     def init(self):
-        #initaliser function - only run once at the start to set up
-        self.moveForward(3)
-        self.leftTurn()
-        self.moveForward(3)
+        # initaliser function - only run once at the start to set up
+        self.moveForward(0.5)
+        self.rightTurn(angle=90)
+        self.moveForward(0.5)
         print("Initialisation complete")
 
-    def uturn(self, dir = "n"):
-        #warning - this is only valid for the left handed robot
-        if dir == "n":
-            self.leftTurn()
-            self.moveForward(1,3)
-            self.leftTurn()
-        if dir == "s":
-            self.rightTurn()
-            self.moveForward()
-            self.rightTurn()
+    def uturn(self, dir="n"):
+        if self.colour == "g":
+            # warning - this is only valid for the left handed robot
+            if dir == "n":
+                self.leftTurn()
+                self.moveForward(0.24,3)
+                self.leftTurn()
+            if dir == "s":
+                self.rightTurn()
+                self.moveForward(1,3)
+                self.rightTurn()
 
     def isblock(self):
-        #code to check if it is a block
-        #probably just check for led with camera
+        # code to check if it is a block
+        # probably just check for led with camera
         #########
         return 0
 
-
     def sweep(self):
-        #arbitrary dist - change based on sensor
+        # arbitrary dist - change based on sensor
         if self.getDist() < 200:
             if not self.isblock:
                 self.uturn()
             else:
                 pass
-                #check for colour
-                #insert code for claw here
-                #and return to base
-                #also work on bypassing the block
+                # check for colour
+                # insert code for claw here
+                # and return to base
+                # also work on bypassing the block
         else:
             self.moveForward(1)
 
-    def goto(self,dest):
+    def initialise_map(self):
+        self.gridMap = gridmap(2.4, 2.4, 0.24)
+
+    def goto(self, dest):
         pass
-        #turn to the correct direction depending on the direction you are facing
-        #follow a set of instructions as instructed by the navigator - basically north south directions
-        #use bearing for direction calculations
-        #I really need the model
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # turn to the correct direction depending on the direction you are facing
+        # follow a set of instructions as instructed by the navigator - basically north south directions
+        # use bearing for direction calculations
+        # I really need the model
