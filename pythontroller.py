@@ -24,8 +24,18 @@ while robot.step(timestep) != -1:
 
     #sweep will not be operational and will only be using dummy variables until I get the model
 
-
-
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
+    robot.moveForward(0.2)
+    robot.leftTurnCompass()
 
 
 

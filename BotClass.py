@@ -171,9 +171,7 @@ class Dez(Robot):
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
         print(f"Start {start}")
-        end = (start - 90)
-        if end<0:
-            end += 360
+        end = (start +270) % 360
 
         if vel == None:
             vel = self.defaultSpeed
