@@ -14,7 +14,7 @@ robot.initialise_map()
 #ensures all the sensors are enabled to avoid errors
 robot.step(1000)
 robot.init()
-robot.goto((0,0))
+
 
 
 
@@ -27,7 +27,8 @@ while robot.step(timestep) != -1:
     #may need changing for the cooperation of the robots
 
     #sweep will not be operational and will only be using dummy variables until I get the model
-    print(robot.comp.getValues())
+    print(robot.getGPS())
+    robot.step(1000)
 
     pass
 
