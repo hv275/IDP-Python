@@ -10,13 +10,12 @@ class Dez(Robot):
 
         # robot consts
         # not all may be needed
-        stepInt = 32
+        self.stepInt = 32
         self.colour = colour
-        self.direc = "north"
+        self.direc = "n"
         self.initflag = 0
-        self.defaultSpeed = 3
+        self.defaultSpeed = 2
         self.gridMap = None
-
 
         self.wheelRad = 0.05
 
@@ -41,10 +40,30 @@ class Dez(Robot):
         # self.clawhead.setPosition(float("inf"))
         # self.clawhead.setVelocity(0)
 
-        # todo initialise GPS when sensor is mounted
+        self.gps = self.getDevice("gps")
+        self.gps.enable(self.stepInt)
+        self.frontDist = self.getDevice("distance_sensor_front")
+        self.frontDist.enable(self.stepInt)
+        self.backDist = self.getDevice("distance_sensor_back")
+        self.backDist.enable(self.stepInt)
+        self.comp = self.getDevice("compass")
+        self.comp.enable(self.stepInt)
+        self.leftcoder = self.getDevice("l_wheel_encoder")
+        self.leftcoder.enable(self.stepInt)
+        self.rightcoder = self.getDevice("r_wheel_encoder")
+        self.rightcoder.enable(self.stepInt)
 
     def getDist(self):
-        return self.distSense.getValue()
+        return self.frontDist.getValue()
+
+    def getBearing(self):
+        north = self.comp.getValues()
+        rad = math.atan2(north[0], north[2])
+        bearing = (rad - 1.5708) / math.pi * 180
+        if bearing < 0:
+            bearing += 360
+
+        return bearing
 
     def moveArmDown(self):
         end_time = self.getTime() + 1
@@ -69,21 +88,20 @@ class Dez(Robot):
                 # self.clawhead.setVelocity(0)
                 self.claw.setVelocity(0)
                 # self.clawhead.setVelocity(0)
-                print("done")
                 break
 
     def moveForward(self, dist, vel=None):
         if vel == None:
-            vel = self.defaultSpeed
+            vel = self.defaultSpeed + 2
         end_time = self.getTime() + (dist / self.wheelRad) / vel
         while self.step(32) != -1:
             if self.getTime() < end_time:
                 for i in self.wheels:
                     i.setVelocity(vel)
+
             else:
                 for i in self.wheels:
                     i.setVelocity(0)
-                print("done")
                 break
 
     def rightTurn(self, vel=None, angle=90):
@@ -92,31 +110,29 @@ class Dez(Robot):
         # numbers have been simply tunes for 90 deg turn at 3rad/s
         # can make into other values once we get the compass on
         angle = math.radians(angle)
-        arc = angle*0.08*1.8715
+        arc = angle * 0.12 * 1.578818
 
         if vel == None:
             vel = self.defaultSpeed
         # todo make a function of geometry
         end_time = self.getTime() + (arc / self.wheelRad) / vel
         while self.step(16) != -1:
-            print(self.getTime())
             if self.getTime() < end_time:
                 self.wheels[0].setVelocity(vel)
                 self.wheels[1].setVelocity(-vel)
             else:
                 for i in self.wheels:
                     i.setVelocity(0)
-                print("done")
                 break
 
     def leftTurn(self, vel=None, angle=90):
         # turn left
         angle = math.radians(angle)
-        arc = angle*0.08*1.8715
+        arc = angle * 0.12 * 1.578818
 
         if vel == None:
             vel = self.defaultSpeed
-        # todo make a function of geometry
+
         end_time = self.getTime() + (arc / self.wheelRad) / vel
         while self.step(16) != -1:
             if self.getTime() < end_time:
@@ -125,47 +141,112 @@ class Dez(Robot):
             else:
                 for i in self.wheels:
                     i.setVelocity(0)
-                print("done")
                 break
+
+    def rightTurnCompass(self, vel=None, angle=90):
+        #it may go around more than once
+        #that is fine, I do not have the time to properly fix it
+        start = round(self.getBearing())%360
+        print(f"Start {start}")
+        end = (start + 90)%360
+
+        if vel == None:
+            vel = self.defaultSpeed
+
+        while self.step(16) != 1:
+            bearing = round(self.getBearing())%360
+            print(bearing)
+            print(end)
+            if bearing  != end:
+                self.wheels[0].setVelocity(vel)
+                self.wheels[1].setVelocity(-vel)
+
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
+                break
+
+    def leftTurnCompass(self, vel = None, angle = 90):
+        # it may go around more than once
+        # that is fine, I do not have the time to properly fix it
+        start = round(self.getBearing()) % 360
+        print(f"Start {start}")
+        end = (start - 90)
+        if end<0:
+            end += 360
+
+        if vel == None:
+            vel = self.defaultSpeed
+
+        while self.step(16) != 1:
+            bearing = round(self.getBearing()) % 360
+            print(bearing)
+            print(end)
+            if bearing != end:
+                self.wheels[0].setVelocity(-vel)
+                self.wheels[1].setVelocity(+vel)
+
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
+                break
+
+
+    # def moveForwardEncoded(self,dist):
+    #     lpos = self.leftcoder.getValue()
+    #     rpos = self.rightcoder.getValue()
+    #     lposfin = lpos + (dist / self.wheelRad)
+    #     rposfin = rpos + (dist / self.wheelRad)
+    #     while self.step(16) != -1:
+    #         if self.leftcoder.getValue() < lposfin and self.rightcoder.getValue() < rposfin:
+    #                 self.wheels[0].setVelocity(self.defaultSpeed)
+    #                 self.wheels[1].setVelocity(self.defaultSpeed*2)
+    #         else:
+    #             for i in self.wheels:
+    #                 i.setVelocity(0)
+    #             break
 
     def init(self):
         # initaliser function - only run once at the start to set up
-        self.moveForward(0.5)
+        self.moveForward(0.25)
         self.rightTurn(angle=90)
-        self.moveForward(0.5)
+        self.moveForward(0.25)
         print("Initialisation complete")
 
-    def uturn(self, dir="n"):
+    def uturn(self):
+        for i in self.wheels:
+            i.setVelocity(0)
         if self.colour == "g":
             # warning - this is only valid for the left handed robot
-            if dir == "n":
+            if self.direc == "n":
                 self.leftTurn()
-                self.moveForward(0.24,3)
+                self.moveForward(0.24, 3)
                 self.leftTurn()
-            if dir == "s":
-                self.rightTurn()
-                self.moveForward(1,3)
-                self.rightTurn()
+                self.direc = "s"
+                print("done")
+            elif self.direc == "s":
+                self.leftTurn()
+                self.moveForward(0.24, 3)
+                self.leftTurn()
+                self.direc = "n"
 
     def isblock(self):
         # code to check if it is a block
         # probably just check for led with camera
         #########
-        return 0
+        return False
 
     def sweep(self):
         # arbitrary dist - change based on sensor
-        if self.getDist() < 200:
-            if not self.isblock:
+        self.moveForward(0.05)
+        print(self.getDist())
+        while self.step(16) != -1:
+            if self.getDist() > 10:
                 self.uturn()
+                break
             else:
-                pass
-                # check for colour
-                # insert code for claw here
-                # and return to base
-                # also work on bypassing the block
-        else:
-            self.moveForward(1)
+                for i in self.wheels:
+                    i.setVelocity(3)
 
     def initialise_map(self):
         self.gridMap = gridmap(2.4, 2.4, 0.24)

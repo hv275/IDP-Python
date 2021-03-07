@@ -17,14 +17,16 @@ timestep = int(robot.getBasicTimeStep())
 
 
 
+
 while robot.step(timestep) != -1:
     #use for repeated things
     #may need changing for the cooperation of the robots
 
     #sweep will not be operational and will only be using dummy variables until I get the model
 
-    robot.leftTurn(angle = 180)
-    robot.rightTurn(angle = 180)
+
+
+
 
 
 
