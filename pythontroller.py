@@ -9,10 +9,15 @@ robot = Dez()
 
 # get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
-
-#slightly different for the other robot
-#argument is simply the distance
+#get the map ready
+robot.initialise_map()
+#ensures all the sensors are enabled to avoid errors
+robot.step(1000)
 robot.init()
+robot.goto((0,0))
+
+
+
 
 
 
@@ -22,12 +27,7 @@ while robot.step(timestep) != -1:
     #may need changing for the cooperation of the robots
 
     #sweep will not be operational and will only be using dummy variables until I get the model
-    robot.moveForward(0.1)
-    print(robot.getGPS())
-
-
-
-
+    print(robot.comp.getValues())
 
     pass
 

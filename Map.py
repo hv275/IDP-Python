@@ -73,8 +73,8 @@ class gridmap():
                 if add_to_open(open_list, neighbor):
                     # Everything is green, add neighbor to open list
                     open_list.append(neighbor)
-                print(next)
                 # Return None, no path is found
+        print("no path found")
         return None
 
     def directions(self, beg, end):
@@ -92,5 +92,5 @@ class gridmap():
 
 
 if __name__ == "__main__":
-    gridmapmap = gridmap(10, 10, 1)
-    print(gridmapmap.directions((0, 0), (4, 4)))
+    gridmapmap = gridmap(22,22,1)
+    print(gridmapmap.directions((0, 2), (0, 0)))

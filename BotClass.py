@@ -13,10 +13,9 @@ class Dez(Robot):
         self.stepInt = 32
         self.colour = colour
         self.direc = "n"
-        self.initflag = 0
         self.defaultSpeed = 2
         self.gridMap = None
-        self.gridSquare = 0.105
+        self.gridSquare = 1
 
         self.wheelRad = 0.05
 
@@ -62,10 +61,10 @@ class Dez(Robot):
     def getGPS(self):
         # returns the useful part of the array
         coords = self.gps.getValues()[0::2]
-        # not yet finished
+
         for i in enumerate(coords):
             #
-            coords[i[0]] = coords[i[1]] - coords[i[1]]%self.gridSquare
+            coords[i[0]] = abs(i[1]*10- (i[1]*10)%self.gridSquare)
         return coords
 
     def moveArmDown(self):
@@ -92,7 +91,7 @@ class Dez(Robot):
 
     def moveForward(self, dist, vel=None):
         if vel == None:
-            vel = self.defaultSpeed + 2
+            vel = self.defaultSpeed
         end_time = self.getTime() + (dist / self.wheelRad) / vel
         while self.step(32) != -1:
             if self.getTime() < end_time:
@@ -148,7 +147,7 @@ class Dez(Robot):
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
 
-        end = (start + 90) % 360
+        end = (start + angle) % 360
 
         if vel == None:
             #am artifically slowing it down
@@ -171,7 +170,7 @@ class Dez(Robot):
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
 
-        end = (start + 270) % 360
+        end = (start + 360 - angle) % 360
 
         if vel == None:
             #artificially
@@ -244,11 +243,81 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(2.1, 2.1, self.gridSquare)
+        self.gridMap = gridmap(22, 22, self.gridSquare)
+
 
     def goto(self, dest):
-        start = self.getGPS()
-        end = dest
-        while self.step(16) != -1:
-            pass
+        start = tuple([round(i) for i in self.getGPS()])
+        end = tuple([round(i-i%self.gridSquare) for i in dest])
+        print(start)
+        print(end)
+        route = self.gridMap.directions(start,end)
+        for dir in route:
+            self.face(dir)
+
+
+    def face(self,dir):
+        vel = 1
+        #modified code from turns
+        #turns will be a little bit awkward for now as I am not detecting the optimal paths for now
+        #todo, find the shortest way to turn
+        #works at the moment but rather poorly, will work on improving asap
+        #todo - implement turn to angle function
+        if dir == (0,-1):
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
+
+                if bearing != 180:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
+
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    break
+            self.moveForward(0.1)
+
+        elif dir ==  (0,1):
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
+
+                if bearing != 0:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
+
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    break
+            self.moveForward(0.1)
+
+        elif dir == (-1,0):
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
+
+                if bearing != 270:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
+
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    break
+            self.moveForward(0.1)
+
+        elif dir == (1,0):
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
+
+                if bearing != 90:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
+
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    break
+            self.moveForward(0.1)
+
+
 
