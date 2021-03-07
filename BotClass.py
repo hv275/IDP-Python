@@ -16,6 +16,7 @@ class Dez(Robot):
         self.initflag = 0
         self.defaultSpeed = 2
         self.gridMap = None
+        self.gridSquare = 0.105
 
         self.wheelRad = 0.05
 
@@ -62,6 +63,10 @@ class Dez(Robot):
         # returns the useful part of the array
         coords = self.gps.getValues()[0::2]
         # not yet finished
+        for i in enumerate(coords):
+            #
+            coords[i[0]] = coords[i[1]] - coords[i[1]]%self.gridSquare
+        return coords
 
     def moveArmDown(self):
         end_time = self.getTime() + 1.5
@@ -75,8 +80,6 @@ class Dez(Robot):
 
     def moveArmUp(self):
         end_time = self.getTime() + 1.5
-        print(self.getTime())
-        print(end_time)
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
@@ -144,7 +147,7 @@ class Dez(Robot):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-        print(f"Start {start}")
+
         end = (start + 90) % 360
 
         if vel == None:
@@ -153,8 +156,7 @@ class Dez(Robot):
 
         while self.step(16) != 1:
             bearing = round(self.getBearing()) % 360
-            print(bearing)
-            print(end)
+
             if bearing != end:
                 self.wheels[0].setVelocity(vel)
                 self.wheels[1].setVelocity(-vel)
@@ -168,7 +170,7 @@ class Dez(Robot):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-        print(f"Start {start}")
+
         end = (start + 270) % 360
 
         if vel == None:
@@ -177,8 +179,7 @@ class Dez(Robot):
 
         while self.step(16) != 1:
             bearing = round(self.getBearing()) % 360
-            print(bearing)
-            print(end)
+
             if bearing != end:
                 self.wheels[0].setVelocity(-vel)
                 self.wheels[1].setVelocity(+vel)
@@ -219,7 +220,6 @@ class Dez(Robot):
                 self.moveForward(0.15, 3)
                 self.leftTurnCompass()
                 self.direc = "s"
-                print("done")
             elif self.direc == "s":
                 self.rightTurnCompass()
                 self.moveForward(0.15, 3)
@@ -235,7 +235,6 @@ class Dez(Robot):
     def sweep(self):
         # arbitrary dist - change based on sensor
         self.moveForward(0.05)
-        print(self.gps.getValues())
         while self.step(16) != -1:
             if self.getDist() > 10:
                 self.uturn()
@@ -245,11 +244,11 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(2.1, 2.1, 0.105)
+        self.gridMap = gridmap(2.1, 2.1, self.gridSquare)
 
     def goto(self, dest):
-        pass
-        # turn to the correct direction depending on the direction you are facing
-        # follow a set of instructions as instructed by the navigator - basically north south directions
-        # use bearing for direction calculations
-        # I really need the model
+        start = self.getGPS()
+        end = dest
+        while self.step(16) != -1:
+            pass
+
