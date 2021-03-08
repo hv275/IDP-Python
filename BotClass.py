@@ -16,6 +16,7 @@ class Dez(Robot):
         self.defaultSpeed = 5
         self.gridMap = None
         self.gridSquare = 1
+        self.lastPath = None
 
         self.wheelRad = 0.05
 
@@ -205,9 +206,11 @@ class Dez(Robot):
 
     def init(self):
         # initaliser function - only run once at the start to set up
-        self.moveForward(0.25)
-        self.leftTurnCompass(angle=90)
-        self.moveForward(0.25)
+        # initaliser function - only run once at the start to set up
+        self.moveForward(0.1)
+        self.leftTurnCompass(angle=45)
+        self.moveForward(0.2)
+        self.leftTurnCompass(angle=45)
         print("Initialisation complete")
 
     def uturn(self):
@@ -244,24 +247,47 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(27, 22, self.gridSquare)
+        self.gridMap = gridmap(22, 22, self.gridSquare)
 
     def goto(self, dest):
-        start = tuple([round(i) for i in self.getGPS()])
+        start = tuple([math.floor(i) for i in self.getGPS()])
         end = tuple([round(i - i % self.gridSquare) for i in dest])
         print(start)
         print(end)
         route = self.gridMap.directions(start, end)
+        self.lastPath = route
         for dir in route:
             self.face(dir)
             self.moveForward(0.1)
 
+    def returnToPoint(self):
+        route = self.lastPath
+        print(route)
+        for i in range(len(route)):
+            route[i] = list(route[i])
+            route[i][0] -= route[i][0]*2
+            route[i][1] -= route[i][1]*2
+            route[i] = tuple(route[i])
+        route.reverse()
+        print(route)
+        for dir in route:
+            self.face(dir)
+            self.moveForward(0.1)
+
+
     def face(self, direc):
         """Argument has to be a touple"""
         vel = 1
+        #dictionary look up to find angles (only works with 90 increments for now
+        #I may look into using maths to find the angle but for now this works well
+
         dirToAngle = {(0, 1): 0, (0, -1): 180, (1, 0): 90, (-1, 0): 270}
         bearing = round(self.getBearing()) % 360
-        targetAngle = dirToAngle[direc]
+        if type(direc) == tuple:
+            targetAngle = dirToAngle[direc]
+        else:
+            print(direc)
+            targetAngle = round(direc)%360
         #code below uses some serious abuse of modulo operator
         if (360+(targetAngle-bearing))%360 >= 180:
             #rotate clockwise
@@ -291,67 +317,3 @@ class Dez(Robot):
 
 
 
-
-    # # needs redoing
-    # def face(self, direc):
-    #     vel = 1
-    #     # modified code from turns
-    #     # turns will be a little bit awkward for now as I am not detecting the optimal paths for now
-    #     # todo, find the shortest way to turn
-    #     # works at the moment but rather poorly, will work on improving asap
-    #     # todo - implement turn to angle function
-    #     if direc == (0, -1):
-    #         while self.step(16) != 1:
-    #             bearing = round(self.getBearing()) % 360
-    #
-    #             if bearing != 180:
-    #                 self.wheels[0].setVelocity(-vel)
-    #                 self.wheels[1].setVelocity(+vel)
-    #
-    #             else:
-    #                 for i in self.wheels:
-    #                     i.setVelocity(0)
-    #                 break
-    #         self.moveForward(0.1)
-    #
-    #     elif direc == (0, 1):
-    #         while self.step(16) != 1:
-    #             bearing = round(self.getBearing()) % 360
-    #
-    #             if bearing != 0:
-    #                 self.wheels[0].setVelocity(-vel)
-    #                 self.wheels[1].setVelocity(+vel)
-    #
-    #             else:
-    #                 for i in self.wheels:
-    #                     i.setVelocity(0)
-    #                 break
-    #         self.moveForward(0.1)
-    #
-    #     elif direc == (-1, 0):
-    #         while self.step(16) != 1:
-    #             bearing = round(self.getBearing()) % 360
-    #
-    #             if bearing != 270:
-    #                 self.wheels[0].setVelocity(-vel)
-    #                 self.wheels[1].setVelocity(+vel)
-    #
-    #             else:
-    #                 for i in self.wheels:
-    #                     i.setVelocity(0)
-    #                 break
-    #         self.moveForward(0.1)
-    #
-    #     elif direc == (1, 0):
-    #         while self.step(16) != 1:
-    #             bearing = round(self.getBearing()) % 360
-    #
-    #             if bearing != 90:
-    #                 self.wheels[0].setVelocity(-vel)
-    #                 self.wheels[1].setVelocity(+vel)
-    #
-    #             else:
-    #                 for i in self.wheels:
-    #                     i.setVelocity(0)
-    #                 break
-    #         self.moveForward(0.1)

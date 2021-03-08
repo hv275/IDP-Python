@@ -41,6 +41,9 @@ class gridmap():
         h = lambda x: math.sqrt((target[1] - x[1]) ** 2 + (target[0] - x[0]) ** 2)
         g = lambda x: math.sqrt((start[1] - x[1]) ** 2 + (start[0] - x[0]) ** 2)
 
+        h_man = lambda x: target[1] - x[1] + target[0] - x[0]
+        g_man = lambda x: start[1] - x[1] + start[0] - x[0]
+
         open_list = [startNode]
         closed_list = []
         while len(open_list) > 0:
@@ -93,4 +96,4 @@ class gridmap():
 
 if __name__ == "__main__":
     gridmapmap = gridmap(22,22,1)
-    print(gridmapmap.directions((0, 2), (0, 0)))
+    print(gridmapmap.alastair((10, 10), (15, 15)))
