@@ -47,6 +47,10 @@ class Dez(Robot):
         self.comp = self.getDevice("compass")
         self.comp.enable(self.stepInt)
 
+        #Camera initilisation
+        self.camera = self.getDevice("camera")
+        self.camera.enable(self.stepInt)
+
     def getDist(self):
         return self.frontDist.getValue()
 
@@ -232,8 +236,18 @@ class Dez(Robot):
     def isblock(self):
         # code to check if it is a block
         # probably just check for led with camera
-        #########
-        return False
+        self.moveArmDown()
+        camera_image = self.camera.getImage()
+        # get coloured components of pixels
+        red = camera_image.imageGetRed(camera_image, self.camera.getWidth(), 0,0)
+        blue = camera_image.imageGetBlue(camera_image, self.camera.getWidth(), 0,0)
+        grey = camera_image.imageGetGray(camera_image, self.camera.getWidth(), 0,0)
+
+        if (red > grey or blue > grey):
+            return True
+
+        else:
+            return False
 
     def sweep(self):
         # arbitrary dist - change based on sensor
