@@ -13,13 +13,7 @@ timestep = int(robot.getBasicTimeStep())
 robot.initialise_map()
 #ensures all the sensors are enabled to avoid errors
 robot.step(1000)
-facing = robot.getBearing()
-print(facing)
-robot.goto((6,6))
-print("done")
-robot.returnToPoint()
-robot.face(facing)
-print(robot.getGPS())
+robot.init()
 
 
 
@@ -29,11 +23,14 @@ print(robot.getGPS())
 while robot.step(timestep) != -1:
     #use for repeated things
     #may need changing for the cooperation of the robots
-
     #sweep will not be operational and will only be using dummy variables until I get the model
-    pass
+    robot.sweep()
 
 
 
 
 # Enter here exit cleanup code.
+
+
+
+

@@ -69,8 +69,8 @@ class gridmap():
                 if neighbor in closed_list:
                     continue
                 # Generate heuristics
-                neighbor.g = g(neighbor.position)
-                neighbor.h = h(neighbor.position)
+                neighbor.g = g_man(neighbor.position)
+                neighbor.h = h_man(neighbor.position)
                 neighbor.f = neighbor.g + neighbor.h
                 # Check if neighbor is in open list and if it has a lower f value
                 if add_to_open(open_list, neighbor):

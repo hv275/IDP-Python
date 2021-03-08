@@ -1,6 +1,7 @@
 from controller import Robot
 import math
 from Map import gridmap
+import numpy as np
 
 
 class Dez(Robot):
@@ -73,7 +74,7 @@ class Dez(Robot):
         return coords
 
     def moveArmDown(self):
-        end_time = self.getTime() + 1.5
+        end_time = self.getTime() + 2
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(0.2)
@@ -83,7 +84,7 @@ class Dez(Robot):
                 break
 
     def moveArmUp(self):
-        end_time = self.getTime() + 1.5
+        end_time = self.getTime() + 2
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
@@ -148,7 +149,7 @@ class Dez(Robot):
     #                 i.setVelocity(0)
     #             break
 
-    def rightTurnCompass(self, vel=None, angle=90):
+    def rightTurnCompass(self,angle=90,vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
@@ -171,7 +172,7 @@ class Dez(Robot):
                     i.setVelocity(0)
                 break
 
-    def leftTurnCompass(self, vel=None, angle=90):
+    def leftTurnCompass(self, angle=90,vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
@@ -213,7 +214,7 @@ class Dez(Robot):
         # initaliser function - only run once at the start to set up
         self.moveForward(0.1)
         self.leftTurnCompass(angle=45)
-        self.moveForward(0.2)
+        self.moveForward(0.35)
         self.leftTurnCompass(angle=45)
         print("Initialisation complete")
 
@@ -239,23 +240,33 @@ class Dez(Robot):
         self.moveArmDown()
         camera_image = self.camera.getImage()
         # get coloured components of pixels
-        red = camera_image.imageGetRed(camera_image, self.camera.getWidth(), 0,0)
-        blue = camera_image.imageGetBlue(camera_image, self.camera.getWidth(), 0,0)
-        grey = camera_image.imageGetGray(camera_image, self.camera.getWidth(), 0,0)
+        red = self.camera.imageGetRed(camera_image, self.camera.getWidth(), 0,0)
+        print(red)
+        green = self.camera.imageGetGreen(camera_image, self.camera.getWidth(), 0,0)
+        print(green)
+        grey = self.camera.imageGetGrey(camera_image, self.camera.getWidth(), 0,0)
+        print(grey)
+        print(self.camera.getImageArray())
 
-        if (red > grey or blue > grey):
+        if (red > grey or green > grey):
+            self.moveArmUp()
             return True
 
         else:
+            self.moveArmUp()
             return False
 
     def sweep(self):
         # arbitrary dist - change based on sensor
         self.moveForward(0.05)
+        loc = self.getGPS()
         while self.step(16) != -1:
-            if self.getDist() > 10:
+            if self.getDist() > 650:
                 self.uturn()
                 break
+            #break clause not fully functional yet
+            if loc[0] <3 and loc[1]<3:
+                return 1
             else:
                 for i in self.wheels:
                     i.setVelocity(3)
@@ -274,23 +285,36 @@ class Dez(Robot):
             self.face(dir)
             self.moveForward(0.1)
 
+    def gotoBearing(self,dest):
+        #determine whether to the left or to the right
+        curr = np.array(self.getGPS())
+        vec = (np.array(dest) - curr)
+        vec = vec/np.linalg.norm(vec)
+        north = np.array([0,1])
+        dot = np.dot(north,vec)
+        targetAngle = (math.degrees(np.arccos(dot))+360)%360
+        bearing = self.getBearing()
+        self.face(targetAngle)
+        while self.step(self.stepInt) != 1:
+            dist = self.getGPS()
+
+
     def returnToPoint(self):
+        #use this to return to points, please do not use anything else as it will not return to where we expect it to be. Am investigating
         route = self.lastPath
-        print(route)
         for i in range(len(route)):
             route[i] = list(route[i])
             route[i][0] -= route[i][0]*2
             route[i][1] -= route[i][1]*2
             route[i] = tuple(route[i])
         route.reverse()
-        print(route)
         for dir in route:
             self.face(dir)
             self.moveForward(0.1)
 
 
     def face(self, direc):
-        """Argument has to be a touple"""
+        """Argument has to be a touple or a bearing"""
         vel = 1
         #dictionary look up to find angles (only works with 90 increments for now
         #I may look into using maths to find the angle but for now this works well
@@ -329,5 +353,14 @@ class Dez(Robot):
                         i.setVelocity(0)
                     break
 
+    def bypassBlock(self):
+        #todo check that there is not another block begind
+        self.rightTurnCompass(angle = 45)
+        self.moveForward(0.2)
+        self.leftTurnCompass(angle = 45)
+        self.moveForward(0.2)
+        self.leftTurnCompass(angle = 45)
+        self.moveForward(0.2)
+        self.rightTurnCompass(45)
 
 
