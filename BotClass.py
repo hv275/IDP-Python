@@ -2,6 +2,7 @@ from controller import Robot
 import math
 from Map import gridmap
 import numpy as np
+import random
 
 
 class Dez(Robot):
@@ -20,8 +21,6 @@ class Dez(Robot):
         self.lastPath = None
         print(self.name)
         self.wheelRad = 0.05
-
-
 
         # inititialise wheels
         self.wheels = []
@@ -45,15 +44,6 @@ class Dez(Robot):
         self.comp = self.getDevice("compass")
         self.comp.enable(self.stepInt)
 
-        #Light Sensor Initilisation
-        self.redlight = self.getDevice("light_sensor_red")
-        self.redlight.enable(self.stepInt)
-
-        self.bluelight = self.getDevice("light_sensor_blue")
-        self.bluelight.enable(self.stepInt)
-
-        self.ambientlight = self.getDevice("light_sensor_ambient")
-        self.ambientlight.enable(self.stepInt)
 
     def getDist(self):
         return self.frontDist.getValue()
@@ -82,7 +72,7 @@ class Dez(Robot):
         return coords
 
     def moveArmDown(self):
-        end_time = self.getTime() + 2
+        end_time = self.getTime() + 1.9
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(0.2)
@@ -92,7 +82,7 @@ class Dez(Robot):
                 break
 
     def moveArmUp(self):
-        end_time = self.getTime() + 2
+        end_time = self.getTime() + 1.9
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
@@ -157,7 +147,7 @@ class Dez(Robot):
     #                 i.setVelocity(0)
     #             break
 
-    def rightTurnCompass(self,angle=90,vel=None):
+    def rightTurnCompass(self, angle=90, vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
@@ -180,7 +170,7 @@ class Dez(Robot):
                     i.setVelocity(0)
                 break
 
-    def leftTurnCompass(self, angle=90,vel=None):
+    def leftTurnCompass(self, angle=90, vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
@@ -222,7 +212,7 @@ class Dez(Robot):
         # initaliser function - only run once at the start to set up
         self.moveForward(0.1)
         self.leftTurnCompass(angle=45)
-        self.moveForward(0.35)
+        self.moveForward(0.3)
         self.leftTurnCompass(angle=45)
         print("Initialisation complete")
 
@@ -230,15 +220,14 @@ class Dez(Robot):
         for i in self.wheels:
             i.setVelocity(0)
         # warning - this is valid for both robots (kinda)
-        # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.15, 3)
+            self.moveForward(0.1, 3)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.15, 3)
+            self.moveForward(0.1, 3)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -246,17 +235,17 @@ class Dez(Robot):
         # code to check if it is a block
         # probably just check for led with camera
         self.moveArmDown()
+        camera_image = self.camera.getImage()
+        # get coloured components of pixels
+        red = self.camera.imageGetRed(camera_image, self.camera.getWidth(), 0, 0)
+        print(red)
+        green = self.camera.imageGetGreen(camera_image, self.camera.getWidth(), 0, 0)
+        print(green)
+        grey = self.camera.imageGetGrey(camera_image, self.camera.getWidth(), 0, 0)
+        print(grey)
+        print(self.camera.getImageArray())
 
-        # get coloured components of light 
-        red_light = self.redlight.getValue()
-        blue_light = self.bluelight.getValue()
-        ambient_light = self.ambientlight.getValue()
-
-        print(red_light)
-        print(blue_light)
-        print(ambient_light)
-
-        if (red_light > ambient_light or blue_light > ambient_light):
+        if (red > grey or green > grey):
             self.moveArmUp()
             return True
 
@@ -264,19 +253,47 @@ class Dez(Robot):
             self.moveArmUp()
             return False
 
+    def isBlockDummy(self):
+        # for now always return 1
+        # for further testing can make 50/50
+        return 1
+
     def sweep(self):
         # arbitrary dist - change based on sensor
         self.moveForward(0.05)
         loc = self.getGPS()
         while self.step(16) != -1:
-            if self.getDist() > 650:
-                self.uturn()
+            if self.getDist() > 580:
+
+                if self.getGPS()[1] > 19 or self.getGPS()[1] < 3:
+                    self.uturn()
+                    print(self.getGPS()[1])
+                    break
+                if self.getDist() > 910 and self.isBlockDummy():
+                    self.stop()
+                    self.moveArmDown()
+                    if self.name == "Dez":
+                        print("Dez returning")
+                        self.goto((7, 10))
+                        self.face(90)
+                        self.moveArmUp()
+                        self.returnToPoint()
+                        continue
+                    elif self.name == "Troy":
+                        self.goto((16, 11))
+                        self.moveArmUp()
+                        self.returnToPoint()
+                        continue
+                if self.getDist() > 910 and not self.isBlockDummy():
+                    self.bypassBlock()
+                    continue
                 break
-            #break clause not fully functional yet
-            if loc[0] <3 and loc[1]<3 and self.name == "Dez":
+
+            # may need some coordinate adjustment
+            if loc[0] < 3 and loc[1] < 3 and self.name == "Dez":
                 return 1
 
-            elif loc[0] > 20 and loc[1]<3 and self.name == "Troy":
+            elif loc[0] > 20 and loc[1] < 3 and self.name == "Troy":
                 return 1
 
             else:
@@ -293,44 +310,48 @@ class Dez(Robot):
         print(end)
         route = self.gridMap.directions(start, end)
         self.lastPath = route
+        self.lastAngle = round(self.getBearing())%360
         for dir in route:
             self.face(dir)
             self.moveForward(0.12)
             print(self.getGPS())
 
-    def gotoBearing(self,dest):
-        #determine whether to the left or to the right
+    def gotoBearing(self, dest):
+        "Cool function but currently broken. Do not use!!!!"
         curr = np.array(self.getGPS())
         vec = (np.array(dest) - curr)
-        vec = vec/np.linalg.norm(vec)
-        north = np.array([0,1])
-        dot = np.dot(north,vec)
-        targetAngle = (math.degrees(np.arccos(dot))+360)%360
+        vec = vec / np.linalg.norm(vec)
+        north = np.array([0, 1])
+        dot = np.dot(north, vec)
+        targetAngle = (math.degrees(np.arccos(dot)) + 360) % 360
         bearing = self.getBearing()
         self.face(targetAngle)
         while self.step(self.stepInt) != 1:
             dist = self.getGPS()
 
-
     def returnToPoint(self):
-        #use this to return to points, please do not use anything else as it will not return to where we expect it to be. Am investigating
+        # use this to return to points, please do not use anything else as it will not return to where we expect it to be.
         route = self.lastPath
         for i in range(len(route)):
             route[i] = list(route[i])
-            route[i][0] -= route[i][0]*2
-            route[i][1] -= route[i][1]*2
+            route[i][0] -= route[i][0] * 2
+            route[i][1] -= route[i][1] * 2
             route[i] = tuple(route[i])
         route.reverse()
         for dir in route:
             self.face(dir)
             self.moveForward(0.1)
+        print(self.getBearing())
+        print(self.lastAngle)
+        self.face(self.lastAngle)
+        print(self.getBearing())
 
 
     def face(self, direc):
-        """Argument has to be a touple or a bearing"""
+        """Argument has to be a tuple or a bearing"""
         vel = 1
-        #dictionary look up to find angles (only works with 90 increments for now
-        #I may look into using maths to find the angle but for now this works well
+        # dictionary look up to find angles (only works with 90 increments for now
+        # I may look into using maths to find the angle but for now this works well
 
         dirToAngle = {(0, 1): 0, (0, -1): 180, (1, 0): 90, (-1, 0): 270}
         bearing = round(self.getBearing()) % 360
@@ -338,10 +359,10 @@ class Dez(Robot):
             targetAngle = dirToAngle[direc]
         else:
             print(direc)
-            targetAngle = round(direc)%360
-        #code below uses some serious abuse of modulo operator
-        if (360+(targetAngle-bearing))%360 >= 180:
-            #rotate clockwise
+            targetAngle = round(direc) % 360
+        # code below uses some serious abuse of modulo operator
+        if (360 + (targetAngle - bearing)) % 360 >= 180:
+            # rotate clockwise
             while self.step(16) != 1:
                 bearing = round(self.getBearing()) % 360
 
@@ -367,13 +388,15 @@ class Dez(Robot):
                     break
 
     def bypassBlock(self):
-        #todo check that there is not another block begind
-        self.rightTurnCompass(angle = 45)
+        # todo check that there is not another block begins
+        self.rightTurnCompass(angle=60)
         self.moveForward(0.2)
-        self.leftTurnCompass(angle = 45)
+        self.leftTurnCompass(angle=60)
         self.moveForward(0.2)
-        self.leftTurnCompass(angle = 45)
+        self.leftTurnCompass(angle=60)
         self.moveForward(0.2)
-        self.rightTurnCompass(45)
+        self.rightTurnCompass(60)
 
-
+    def stop(self):
+        for i in self.wheels:
+            i.setVelocity(0)
