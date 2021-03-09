@@ -69,8 +69,8 @@ class gridmap():
                 if neighbor in closed_list:
                     continue
                 # Generate heuristics
-                neighbor.g = g_man(neighbor.position)
-                neighbor.h = h_man(neighbor.position)
+                neighbor.g = g(neighbor.position)
+                neighbor.h = h(neighbor.position)
                 neighbor.f = neighbor.g + neighbor.h
                 # Check if neighbor is in open list and if it has a lower f value
                 if add_to_open(open_list, neighbor):
@@ -85,7 +85,7 @@ class gridmap():
         directions = []
         for node in enumerate(nodes):
             if node[0] == 0:
-                pass
+                directions.append(tuple(map(lambda i, j: i - j, node[1], beg)))
             else:
                 directions.append(tuple(map(lambda i, j: i - j, node[1], nodes[node[0] - 1])))
         return directions
@@ -96,4 +96,5 @@ class gridmap():
 
 if __name__ == "__main__":
     gridmapmap = gridmap(22,22,1)
-    print(gridmapmap.alastair((10, 10), (15, 15)))
+    print(gridmapmap.alastair((11, 7), (3, 3)))
+    print(gridmapmap.directions((11, 7), (3, 3)))

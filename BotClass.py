@@ -14,17 +14,14 @@ class Dez(Robot):
         self.stepInt = 32
         self.colour = colour
         self.direc = "n"
-        self.defaultSpeed = 5
+        self.defaultSpeed = 4
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
 
         self.wheelRad = 0.05
 
-        # initialise the distance sensor (currently commented out)
-        """
-        self.distSense = self.getDevice("ds_left")
-        self.distSense.enable(32)"""
+
 
         # inititialise wheels
         self.wheels = []
@@ -66,11 +63,15 @@ class Dez(Robot):
 
     def getGPS(self):
         # returns the useful part of the array
+        # also the coordinate system is a mess
+        # it is very dumb but should work
         coords = self.gps.getValues()[0::2]
 
         for i in enumerate(coords):
             #
             coords[i[0]] = abs(i[1] * 10 - (i[1] * 10) % self.gridSquare)
+        # in place modification
+        coords.reverse()
         return coords
 
     def moveArmDown(self):
@@ -283,7 +284,8 @@ class Dez(Robot):
         self.lastPath = route
         for dir in route:
             self.face(dir)
-            self.moveForward(0.1)
+            self.moveForward(0.12)
+            print(self.getGPS())
 
     def gotoBearing(self,dest):
         #determine whether to the left or to the right
