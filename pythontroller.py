@@ -13,11 +13,8 @@ timestep = int(robot.getBasicTimeStep())
 robot.initialise_map()
 #ensures all the sensors are enabled to avoid errors
 robot.step(1000)
-robot.moveArmUp()
-robot.goto((3,3))
-print(robot.getGPS())
-robot.goto((18,18))
-robot.goto((7,11))
+robot.init()
+
 
 
 
@@ -27,8 +24,15 @@ robot.goto((7,11))
 while robot.step(timestep) != -1:
     #use for repeated things
     #may need changing for the cooperation of the robots
-    #sweep will not be operational and will only be using dummy variables until I get the model
-    pass
+    #self note:
+    if robot.sweep() and robot.name == "Dez":
+        robot.goto((6,10))
+        robot.face(90)
+        break
+    elif robot.sweep() and robot.name == "Troy":
+        robot.goto((18,9))
+        robot.face(270)
+        break
 
 
 

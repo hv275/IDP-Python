@@ -5,20 +5,20 @@ import numpy as np
 
 
 class Dez(Robot):
-    def __init__(self, colour="g"):
+    def __init__(self):
         # inherit from Robot
         super().__init__()
 
         # robot consts
         # not all may be needed
         self.stepInt = 32
-        self.colour = colour
+        self.name = self.getName()
         self.direc = "n"
         self.defaultSpeed = 4
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
-
+        print(self.name)
         self.wheelRad = 0.05
 
 
@@ -71,6 +71,7 @@ class Dez(Robot):
             #
             coords[i[0]] = abs(i[1] * 10 - (i[1] * 10) % self.gridSquare)
         # in place modification
+        # this is dumb but I do not have the time for a cleaner fix
         coords.reverse()
         return coords
 
@@ -222,18 +223,18 @@ class Dez(Robot):
     def uturn(self):
         for i in self.wheels:
             i.setVelocity(0)
-        if self.colour == "g":
-            # warning - this is only valid for the left handed robot
-            if self.direc == "n":
-                self.leftTurnCompass()
-                self.moveForward(0.15, 3)
-                self.leftTurnCompass()
-                self.direc = "s"
-            elif self.direc == "s":
-                self.rightTurnCompass()
-                self.moveForward(0.15, 3)
-                self.rightTurnCompass()
-                self.direc = "n"
+        # warning - this is valid for both robots (kinda)
+        # warning - this is valid for both robots (kinda)
+        if self.direc == "n":
+            self.leftTurnCompass()
+            self.moveForward(0.15, 3)
+            self.leftTurnCompass()
+            self.direc = "s"
+        elif self.direc == "s":
+            self.rightTurnCompass()
+            self.moveForward(0.15, 3)
+            self.rightTurnCompass()
+            self.direc = "n"
 
     def isblock(self):
         # code to check if it is a block
@@ -266,14 +267,18 @@ class Dez(Robot):
                 self.uturn()
                 break
             #break clause not fully functional yet
-            if loc[0] <3 and loc[1]<3:
+            if loc[0] <3 and loc[1]<3 and self.name == "Dez":
                 return 1
+
+            elif loc[0] > 20 and loc[1]<3 and self.name == "Troy":
+                return 1
+
             else:
                 for i in self.wheels:
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(22, 22, self.gridSquare)
+        self.gridMap = gridmap(24, 24, self.gridSquare)
 
     def goto(self, dest):
         start = tuple([math.floor(i) for i in self.getGPS()])
