@@ -45,9 +45,15 @@ class Dez(Robot):
         self.comp = self.getDevice("compass")
         self.comp.enable(self.stepInt)
 
-        #Camera initilisation
-        self.camera = self.getDevice("camera")
-        self.camera.enable(self.stepInt)
+        #Light Sensor Initilisation
+        self.redlight = self.getDevice("light_sensor_red")
+        self.redlight.enable(self.stepInt)
+
+        self.bluelight = self.getDevice("light_sensor_blue")
+        self.bluelight.enable(self.stepInt)
+
+        self.ambientlight = self.getDevice("light_sensor_ambient")
+        self.ambientlight.enable(self.stepInt)
 
     def getDist(self):
         return self.frontDist.getValue()
@@ -240,17 +246,17 @@ class Dez(Robot):
         # code to check if it is a block
         # probably just check for led with camera
         self.moveArmDown()
-        camera_image = self.camera.getImage()
-        # get coloured components of pixels
-        red = self.camera.imageGetRed(camera_image, self.camera.getWidth(), 0,0)
-        print(red)
-        green = self.camera.imageGetGreen(camera_image, self.camera.getWidth(), 0,0)
-        print(green)
-        grey = self.camera.imageGetGrey(camera_image, self.camera.getWidth(), 0,0)
-        print(grey)
-        print(self.camera.getImageArray())
 
-        if (red > grey or green > grey):
+        # get coloured components of light 
+        red_light = self.redlight.getValue()
+        blue_light = self.bluelight.getValue()
+        ambient_light = self.ambientlight.getValue()
+
+        print(red_light)
+        print(blue_light)
+        print(ambient_light)
+
+        if (red_light > ambient_light or blue_light > ambient_light):
             self.moveArmUp()
             return True
 
