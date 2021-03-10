@@ -57,6 +57,10 @@ class Dez(Robot):
         self.greenlight = self.getDevice("light_sensor_green")
         self.greenlight.enable(self.stepInt)
 
+        #emitter and receiver
+        self.emitter = self.getDevice("emitter")
+        self.receiver = self.getDevice("receiver")
+        self.receiver.enable(self.stepInt)
 
 
     def getDist(self):
@@ -295,6 +299,28 @@ class Dez(Robot):
             self.moveBack(0.03)
             self.moveArmUp()
             return False
+
+    def transmit_data(self):
+        # transmit data from gps using emitter
+        coords = self.getGPS()
+        #emitter requires string to send- convert from list to string
+        for i in coords:
+            data_string = str(i)
+            self.emitter.send(data_string)
+
+    def receive_data(self):
+        #receive 3 separate co-ordinates as a string and return list of float co-ordinates
+        # webts gives error if queue_length is 0
+        received_coords=[]
+        for i in range(3):
+            received_data = self.receiver.getData()
+            # received data is also of type string 
+            received_coords.append(float(received_data))
+            if self.receiver.getQueueLength() > 0:
+                self.receiver.nextPacket()
+
+        return received_coords
+
 
     def isBlockDummy(self):
         # for now always return 1
