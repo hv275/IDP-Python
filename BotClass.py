@@ -15,7 +15,7 @@ class Dez(Robot):
         self.stepInt = 32
         self.name = self.getName()
         self.direc = "n"
-        self.defaultSpeed = 4
+        self.defaultSpeed = 6
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
@@ -36,7 +36,7 @@ class Dez(Robot):
         self.claw.setVelocity(0)
 
         self.distsensors = []
-        sensornames = ["distance_sensor_front","distance_sensor_back"]
+        sensornames = ["distance_sensor_front","distance_sensor_centre","distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
             self.distsensors[i].enable(self.stepInt)
@@ -89,7 +89,7 @@ class Dez(Robot):
         return coords
 
     def moveArmDown(self):
-        end_time = self.getTime() + 1.91
+        end_time = self.getTime() + 1.8
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(0.2)
@@ -99,7 +99,7 @@ class Dez(Robot):
                 break
 
     def moveArmUp(self):
-        end_time = self.getTime() + 1.91
+        end_time = self.getTime() + 1.8
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
@@ -254,12 +254,12 @@ class Dez(Robot):
         # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.15, 3)
+            self.moveForward(0.1, 3)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.15, 3)
+            self.moveForward(0.1, 3)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -268,7 +268,7 @@ class Dez(Robot):
         # probably just check for led with camera
         self.moveArmDown()
         self.moveForward(0.08)
-        self.leftTurnCompass(15)
+        self.leftTurnCompass(20)
         # get coloured components of light
         red_light = self.redlight.getValue()
         #blue or green?
@@ -279,13 +279,13 @@ class Dez(Robot):
         print(green_light)
 
         if red_light > ambient_light and self.name == "Dez":
-            self.rightTurnCompass(15)
+            self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
             return True
 
         if green_light > ambient_light and self.name == "Troy":
-            self.rightTurnCompass(15)
+            self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
             return True
@@ -303,21 +303,22 @@ class Dez(Robot):
 
     def sweep(self):
         # arbitrary dist - change based on sensor
+        self.correctBearing()
         self.moveForward(0.05)
         loc = self.getGPS()
         while self.step(16) != -1:
             if self.getDist()[0] > 580:
-
+                print(self.getDist())
                 if self.getGPS()[1] > 20 or self.getGPS()[1] < 3:
                     self.uturn()
                     break
-                if self.getDist()[1] > 910 or self.getDist()[0]>910:
+                if self.getDist()[1] > 800 or self.getDist()[0]>800 or self.getDist()[2]>800:
                     if self.isBlock():
                         self.stop()
                         self.moveArmDown()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((7, 10))
+                            self.goto((7, 10), heuristic="asf")
                             self.face(90)
                             self.moveArmUp()
                             self.face(270)
@@ -352,15 +353,14 @@ class Dez(Robot):
     def goto(self, dest, heuristic = "man"):
         start = tuple([math.floor(i) for i in self.getGPS()])
         end = tuple([round(i - i % self.gridSquare) for i in dest])
-        print(start)
-        print(end)
+
         route = self.gridMap.directions(start, end, heuristic)
         self.lastPath = route
         self.lastAngle = round(self.getBearing())%360
         for dir in route:
             self.face(dir)
             self.moveForward(0.12)
-            print(self.getGPS())
+
 
     def gotoBearing(self, dest):
         "Cool function but currently broken. Do not use!!!!"
@@ -387,10 +387,8 @@ class Dez(Robot):
         for dir in route:
             self.face(dir)
             self.moveForward(0.1)
-        print(self.getBearing())
-        print(self.lastAngle)
         self.face(self.lastAngle)
-        print(self.getBearing())
+
 
 
     def face(self, direc):
@@ -404,7 +402,6 @@ class Dez(Robot):
         if type(direc) == tuple:
             targetAngle = dirToAngle[direc]
         else:
-            print(direc)
             targetAngle = round(direc) % 360
         # code below uses some serious abuse of modulo operator
         if (360 + (targetAngle - bearing)) % 360 >= 180:
@@ -435,6 +432,7 @@ class Dez(Robot):
 
     def bypassBlock(self):
         # todo check that there is not another block begins
+        self.moveBack(0.05)
         self.rightTurnCompass(angle=60)
         self.moveForward(0.2)
         self.leftTurnCompass(angle=60)
@@ -446,3 +444,10 @@ class Dez(Robot):
     def stop(self):
         for i in self.wheels:
             i.setVelocity(0)
+
+    def correctBearing(self):
+        current = round(self.getBearing())
+        goal = round(current/10)*10
+        print(current)
+        print(goal)
+        self.face(goal)
