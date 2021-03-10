@@ -23,7 +23,7 @@ class gridmap():
                 if j != 0:
                     self.map.add_edge(((i * square_side, j * square_side), (i * square_side, (j - 1) * square_side)))
 
-    def alastair(self, start, target):
+    def alastair(self, start, target, heuristic = "man"):
         # name explanation - algorithm is called A*, I spelt it as astar and that almost looks like alastair
         # cost of exploring all nodes is 1
         # this function is some shady code, proceed at your own peril
@@ -69,8 +69,12 @@ class gridmap():
                 if neighbor in closed_list:
                     continue
                 # Generate heuristics
-                neighbor.g = g(neighbor.position)
-                neighbor.h = h(neighbor.position)
+                if heuristic == "man":
+                    neighbor.g = g_man(neighbor.position)
+                    neighbor.h = h_man(neighbor.position)
+                elif heuristic == "acf":
+                    neighbor.g = g(neighbor.position)
+                    neighbor.h = h(neighbor.position)
                 neighbor.f = neighbor.g + neighbor.h
                 # Check if neighbor is in open list and if it has a lower f value
                 if add_to_open(open_list, neighbor):
@@ -80,8 +84,8 @@ class gridmap():
         print("no path found")
         return None
 
-    def directions(self, beg, end):
-        nodes = self.alastair(beg, end)
+    def directions(self, beg, end, heurisitic):
+        nodes = self.alastair(beg, end, heurisitic)
         directions = []
         for node in enumerate(nodes):
             if node[0] == 0:
