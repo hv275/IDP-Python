@@ -3,6 +3,7 @@ import math
 from Map import gridmap
 import numpy as np
 import random
+import struct
 
 
 class Dez(Robot):
@@ -15,12 +16,13 @@ class Dez(Robot):
         self.stepInt = 32
         self.name = self.getName()
         self.direc = "n"
-        self.defaultSpeed = 6
+        self.defaultSpeed = 7
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
         print(self.name)
         self.wheelRad = 0.05
+        self.queue = []
 
         # inititialise wheels
         self.wheels = []
@@ -258,12 +260,12 @@ class Dez(Robot):
         # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.1, 3)
+            self.moveForward(0.11, 3)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.1, 3)
+            self.moveForward(0.11, 3)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -271,55 +273,63 @@ class Dez(Robot):
         # code to check if it is a block
         # probably just check for led with camera
         self.moveArmDown()
-        self.moveForward(0.08)
-        self.leftTurnCompass(20)
+        self.moveForward(0.03)
+        self.leftTurnCompass(30)
         # get coloured components of light
         red_light = self.redlight.getValue()
         #blue or green?
         green_light = self.greenlight.getValue()
         ambient_light = 333.4
 
-        print(red_light)
-        print(green_light)
 
         if red_light > ambient_light and self.name == "Dez":
-            self.rightTurnCompass(20)
+            self.rightTurnCompass(30)
             self.moveBack(0.03)
             self.moveArmUp()
+            print("Red Block Detected, attempting delivery")
             return True
 
         if green_light > ambient_light and self.name == "Troy":
-            self.rightTurnCompass(20)
+            self.rightTurnCompass(30)
             self.moveBack(0.03)
             self.moveArmUp()
+            print("Green Block Detected, attempting delivery")
             return True
 
         else:
-            self.rightTurnCompass(15)
+            self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
+            if self.name == "Dez":
+                print("Green Colour detected, location information sent")
+            elif self.name == "Troy":
+                print("Red Colour detected, location information sent")
             return False
 
-    def transmit_data(self):
-        # transmit data from gps using emitter
-        coords = self.getGPS()
-        #emitter requires string to send- convert from list to string
-        for i in coords:
-            data_string = str(i)
-            self.emitter.send(data_string)
-
-    def receive_data(self):
-        #receive 3 separate co-ordinates as a string and return list of float co-ordinates
-        # webts gives error if queue_length is 0
-        received_coords=[]
-        for i in range(3):
-            received_data = self.receiver.getData()
-            # received data is also of type string 
-            received_coords.append(float(received_data))
-            if self.receiver.getQueueLength() > 0:
-                self.receiver.nextPacket()
-
-        return received_coords
+    '''left until a better time'''
+    # def transmit_data(self):
+    #     # transmit data from gps using emitter
+    #     coords = self.getGPS()
+    #     x = coords[0]
+    #     y = coords[1]
+    #     bearing = round(self.getBearing())
+    #     #emitter requires string to send- convert from list to string
+    #     data = struct.pack('ffi',x,y,bearing)
+    #     self.emitter.send(data)
+    #
+    #
+    # def receive_data(self):
+    #     #receive 3 separate co-ordinates as a string and return list of float co-ordinates
+    #     # webts gives error if queue_length is 0
+    #     received_coords=[]
+    #     for i in range(3):
+    #         received_data = self.receiver.getData()
+    #         # received data is also of type string
+    #         received_coords.append(float(received_data))
+    #         if self.receiver.getQueueLength() > 0:
+    #             self.receiver.nextPacket()
+    #
+    #     return received_coords
 
 
     def isBlockDummy(self):
@@ -333,15 +343,19 @@ class Dez(Robot):
         self.moveForward(0.05)
         loc = self.getGPS()
         while self.step(16) != -1:
-            if self.getDist()[0] > 580:
-                print(self.getDist())
+            if self.getDist()[0] > 580 or self.getDist()[1] > 580  or self.getDist()[2]>580:
                 if self.getGPS()[1] > 20 or self.getGPS()[1] < 3:
                     self.uturn()
                     break
                 if self.getDist()[1] > 800 or self.getDist()[0]>800 or self.getDist()[2]>800:
+                    if self.getDist()[0]>800 and self.getDist()[1] < 100:
+                        self.leftTurnCompass(30)
+                    if self.getDist()[2]>800 and self.getDist()[1] < 100:
+                        self.rightTurnCompass(30)
                     if self.isBlock():
                         self.stop()
                         self.moveArmDown()
+                        self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
                             self.goto((7, 10), heuristic="asf")
@@ -357,16 +371,17 @@ class Dez(Robot):
                             self.returnToPoint()
                             continue
                     else:
+                        self.correctBearing()
                         print("bypassing")
                         self.bypassBlock()
                         continue
                 break
 
             # may need some coordinate adjustment
-            if loc[0] < 2 and loc[1] < 2 and self.name == "Dez" or loc[0] < 2 and loc[1] > 19 and self.name == "Dez":
+            if loc[0] < 3 and loc[1] < 3 and self.name == "Dez":
                 return 1
 
-            elif loc[0] > 20 and loc[1] < 3 and self.name == "Troy" or loc[0] > 20 and loc[1] > 20 and self.name == "Troy":
+            elif loc[0] > 19 and loc[1] < 3 and self.name == "Troy":
                 return 1
 
             else:
@@ -458,14 +473,26 @@ class Dez(Robot):
 
     def bypassBlock(self):
         # todo check that there is not another block begins
-        self.moveBack(0.05)
-        self.rightTurnCompass(angle=60)
-        self.moveForward(0.2)
-        self.leftTurnCompass(angle=60)
-        self.moveForward(0.2)
-        self.leftTurnCompass(angle=60)
-        self.moveForward(0.2)
-        self.rightTurnCompass(60)
+        if round(self.getBearing()) == 180:
+            self.moveBack(0.05)
+            self.leftTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.rightTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.rightTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.leftTurnCompass(60)
+            self.correctBearing()
+        else:
+            self.moveBack(0.05)
+            self.leftTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.rightTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.rightTurnCompass(angle=60)
+            self.moveForward(0.2)
+            self.leftTurnCompass(60)
+            self.correctBearing()
 
     def stop(self):
         for i in self.wheels:
@@ -473,7 +500,6 @@ class Dez(Robot):
 
     def correctBearing(self):
         current = round(self.getBearing())
-        goal = round(current/10)*10
-        print(current)
-        print(goal)
+        base = 90
+        goal = base * round(current/base)
         self.face(goal)
