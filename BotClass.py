@@ -400,6 +400,7 @@ class Dez(Robot):
         self.lastAngle = round(self.getBearing())%360
         for dir in route:
             self.face(dir)
+            self.face(dir)
             self.moveForward(0.12)
 
 
@@ -478,7 +479,7 @@ class Dez(Robot):
             self.leftTurnCompass(angle=60)
             self.moveForward(0.2)
             self.rightTurnCompass(angle=60)
-            self.moveForward(0.2)
+            self.moveForward(0.1)
             self.rightTurnCompass(angle=60)
             self.moveForward(0.2)
             self.leftTurnCompass(60)
