@@ -369,6 +369,7 @@ class Dez(Robot):
                             self.goto((30, 24))
                             self.face(180)
                             self.moveArmUp()
+                            self.moveBack(0.25)
                             self.returnToPoint()
                             continue
                     else:
