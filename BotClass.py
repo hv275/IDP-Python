@@ -361,6 +361,7 @@ class Dez(Robot):
                             self.goto((7, 10), heuristic="asf")
                             self.face(90)
                             self.moveArmUp()
+                            self.moveBack(0.25)
                             self.face(270)
                             self.returnToPoint()
                             continue
