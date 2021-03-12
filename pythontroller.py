@@ -41,6 +41,11 @@ while robot.step(timestep) != -1:
         robot.goto((62, 24), heuristic="acf")
         robot.face(270)
         break
+    elif robot.getTime() == 270:
+        if robot.name == "Dez":
+            robot.goto((14,20))
+        elif robot.name ==  "Troy":
+            robot.goto((30,24))
 
 
 
