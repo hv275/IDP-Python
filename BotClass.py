@@ -88,7 +88,7 @@ class Dez(Robot):
 
         for i in enumerate(coords):
             #
-            coords[i[0]] = abs(i[1] * 10 - (i[1] * 10) % self.gridSquare)
+            coords[i[0]] = abs(i[1] * 20 - (i[1] * 20) % self.gridSquare)
         # in place modification
         # this is dumb but I do not have the time for a cleaner fix
         coords.reverse()
@@ -358,14 +358,14 @@ class Dez(Robot):
                         self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((7, 10), heuristic="asf")
+                            self.goto((14, 20), heuristic="asf")
                             self.face(90)
                             self.moveArmUp()
                             self.face(270)
                             self.returnToPoint()
                             continue
                         elif self.name == "Troy":
-                            self.goto((15, 12))
+                            self.goto((30, 24))
                             self.face(180)
                             self.moveArmUp()
                             self.returnToPoint()
@@ -378,10 +378,11 @@ class Dez(Robot):
                 break
 
             # may need some coordinate adjustment
-            if loc[0] < 3 and loc[1] < 3 and self.name == "Dez":
+            if loc[0] < 4 and loc[1] < 4 and self.name == "Dez":
+                print("Dez finished sweep")
                 return 1
 
-            elif loc[0] > 19 and loc[1] < 3 and self.name == "Troy":
+            elif loc[0] > 38 and loc[1] < 6 and self.name == "Troy":
                 return 1
 
             else:
@@ -389,9 +390,9 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(24, 24, self.gridSquare)
+        self.gridMap = gridmap(48, 48, self.gridSquare)
 
-    def goto(self, dest, heuristic = "man"):
+    def goto(self, dest, heuristic = "acf"):
         start = tuple([math.floor(i) for i in self.getGPS()])
         end = tuple([round(i - i % self.gridSquare) for i in dest])
 
@@ -401,7 +402,7 @@ class Dez(Robot):
         for dir in route:
             self.face(dir)
             self.face(dir)
-            self.moveForward(0.12)
+            self.moveForward(0.06)
 
 
     def gotoBearing(self, dest):
