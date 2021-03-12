@@ -358,7 +358,7 @@ class Dez(Robot):
                         self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((14, 20), heuristic="asf")
+                            self.goto((14, 24), heuristic="asf")
                             self.face(90)
                             self.moveArmUp()
                             self.moveBack(0.25)
