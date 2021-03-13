@@ -16,7 +16,7 @@ class Dez(Robot):
         self.stepInt = 32
         self.name = self.getName()
         self.direc = "n"
-        self.defaultSpeed = 7
+        self.defaultSpeed = 5
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
@@ -81,6 +81,7 @@ class Dez(Robot):
         if bearing < 0:
             bearing += 360
 
+
         return bearing
 
     def getGPS(self):
@@ -91,7 +92,7 @@ class Dez(Robot):
 
         for i in enumerate(coords):
             #
-            coords[i[0]] = abs(i[1] * 10 - (i[1] * 10) % self.gridSquare)
+            coords[i[0]] = abs(i[1] * 20 - (i[1] * 20) % self.gridSquare)
         # in place modification
         # this is dumb but I do not have the time for a cleaner fix
         coords.reverse()
@@ -188,50 +189,80 @@ class Dez(Robot):
     #             break
 
     def rightTurnCompass(self, angle=90, vel=None):
-        # it may go around more than once
-        # that is fine, I do not have the time to properly fix it
+        # ok so this is terrible badness
+        # but it is terrible badness that works :)
         start = round(self.getBearing()) % 360
-
+        base = 5
+        start = base * round(start / base)
         end = (start + angle) % 360
-
         if vel == None:
             # am artifically slowing it down
-            vel = 1
+            vel = self.defaultSpeed
+        if end == 0:
 
-        while self.step(16) != 1:
-            bearing = round(self.getBearing()) % 360
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
 
-            if bearing != end:
-                self.wheels[0].setVelocity(vel)
-                self.wheels[1].setVelocity(-vel)
+                if bearing > 3:
+                    self.wheels[0].setVelocity(vel)
+                    self.wheels[1].setVelocity(-vel)
 
-            else:
-                for i in self.wheels:
-                    i.setVelocity(0)
-                break
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    print("done")
+                    self.correctBearing(5)
+                    break
+        else:
+            while self.step(16) != 1:
+                bearing = round(self.getBearing()) % 360
+
+                if bearing <= end:
+                    self.wheels[0].setVelocity(vel)
+                    self.wheels[1].setVelocity(-vel)
+
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                        self.correctBearing(5)
+                    break
+
 
     def leftTurnCompass(self, angle=90, vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-
+        base = 5
+        start = base * round(start / base)
         end = (start + 360 - angle) % 360
-
+        print(end)
         if vel == None:
             # artificially
-            vel = 1
+            vel = self.defaultSpeed
+        if end == 270:
+            while self.step(1) != 1:
+                bearing = (round(self.getBearing())+359) % 360
+                if bearing-3 > end:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
 
-        while self.step(1) != 1:
-            bearing = round(self.getBearing()) % 360
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    self.correctBearing(5)
+                    break
+        else:
+            while self.step(1) != 1:
+                bearing = round(self.getBearing()) % 360
+                if bearing > (end+4) % 360:
+                    self.wheels[0].setVelocity(-vel)
+                    self.wheels[1].setVelocity(+vel)
 
-            if bearing != end:
-                self.wheels[0].setVelocity(-vel)
-                self.wheels[1].setVelocity(+vel)
-
-            else:
-                for i in self.wheels:
-                    i.setVelocity(0)
-                break
+                else:
+                    for i in self.wheels:
+                        i.setVelocity(0)
+                    self.correctBearing(5)
+                    break
 
     # def moveForwardEncoded(self,dist):
     #     lpos = self.leftcoder.getValue()
@@ -350,13 +381,13 @@ class Dez(Robot):
         loc = self.getGPS()
         while self.step(16) != -1:
             if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
-                if self.getGPS()[1] > 20 or self.getGPS()[1] < 3:
+                if self.getGPS()[1] > 40 or self.getGPS()[1] < 3:
                     self.uturn()
                     break
-                if self.getDist()[1] > 800 or self.getDist()[0] > 800 or self.getDist()[2] > 800:
-                    if self.getDist()[0] > 800 and self.getDist()[1] < 100:
+                if self.getDist()[1] > 850 or self.getDist()[0] > 850 or self.getDist()[2] > 850:
+                    if self.getDist()[0] > 850 and self.getDist()[1] < 100:
                         self.leftTurnCompass(30)
-                    if self.getDist()[2] > 800 and self.getDist()[1] < 100:
+                    if self.getDist()[2] > 850 and self.getDist()[1] < 100:
                         self.rightTurnCompass(30)
                     if self.isBlock():
                         self.stop()
@@ -364,7 +395,7 @@ class Dez(Robot):
                         self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((7, 10), heuristic="asf")
+                            self.goto((14, 24), heuristic="acf")
                             self.face(90)
                             self.moveArmUp()
                             self.face(270)
@@ -374,6 +405,7 @@ class Dez(Robot):
                             self.goto((15, 12))
                             self.face(180)
                             self.moveArmUp()
+                            self.moveBack(0.25)
                             self.returnToPoint()
                             continue
                     else:
@@ -395,7 +427,7 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(24, 24, self.gridSquare)
+        self.gridMap = gridmap(44, 44, self.gridSquare)
 
     def goto(self, dest, heuristic="man"):
         start = tuple([math.floor(i) for i in self.getGPS()])
@@ -443,11 +475,20 @@ class Dez(Robot):
         # I may look into using maths to find the angle but for now this works well
 
         dirToAngle = {(0, 1): 0, (0, -1): 180, (1, 0): 90, (-1, 0): 270}
+
         bearing = round(self.getBearing()) % 360
+        """--------------------------------------------------------------------------------------"""
+        """be careful with this rounding"""
+        base = 3
+        bearing = base * round(bearing / base)
+        """--------------------------------------------------------------------------------------"""
         if type(direc) == tuple:
             targetAngle = dirToAngle[direc]
         else:
             targetAngle = round(direc) % 360
+
+        print(targetAngle)
+        print((360 + (targetAngle - bearing)) % 360)
         # code below uses some serious abuse of modulo operator
         if (360 + (targetAngle - bearing)) % 360 >= 180:
             # rotate clockwise
@@ -465,7 +506,6 @@ class Dez(Robot):
         else:
             while self.step(16) != 1:
                 bearing = round(self.getBearing()) % 360
-
                 if bearing != targetAngle:
                     self.wheels[0].setVelocity(vel)
                     self.wheels[1].setVelocity(-vel)
@@ -502,8 +542,8 @@ class Dez(Robot):
         for i in self.wheels:
             i.setVelocity(0)
 
-    def correctBearing(self):
+    def correctBearing(self, base = 90):
         current = round(self.getBearing())
-        base = 90
-        goal = base * round(current / base)
+        goal = base * round(current/base)
+        #note, it uses its own turning code
         self.face(goal)
