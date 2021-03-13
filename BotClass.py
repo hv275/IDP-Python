@@ -38,7 +38,7 @@ class Dez(Robot):
         self.claw.setVelocity(0)
 
         self.distsensors = []
-        sensornames = ["distance_sensor_front","distance_sensor_centre","distance_sensor_back"]
+        sensornames = ["distance_sensor_front","distance_sensor_centre", "distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
             self.distsensors[i].enable(self.stepInt)
@@ -63,6 +63,10 @@ class Dez(Robot):
         self.emitter = self.getDevice("emitter")
         self.receiver = self.getDevice("receiver")
         self.receiver.enable(self.stepInt)
+
+        #array for storing recieved co-ordinates
+        self.queue_dez=[]
+        self.queue_troy = []
 
 
     def getDist(self):
@@ -307,29 +311,35 @@ class Dez(Robot):
             return False
 
     '''left until a better time'''
-    # def transmit_data(self):
-    #     # transmit data from gps using emitter
-    #     coords = self.getGPS()
-    #     x = coords[0]
-    #     y = coords[1]
-    #     bearing = round(self.getBearing())
-    #     #emitter requires string to send- convert from list to string
-    #     data = struct.pack('ffi',x,y,bearing)
-    #     self.emitter.send(data)
-    #
-    #
-    # def receive_data(self):
-    #     #receive 3 separate co-ordinates as a string and return list of float co-ordinates
-    #     # webts gives error if queue_length is 0
-    #     received_coords=[]
-    #     for i in range(3):
-    #         received_data = self.receiver.getData()
-    #         # received data is also of type string
-    #         received_coords.append(float(received_data))
-    #         if self.receiver.getQueueLength() > 0:
-    #             self.receiver.nextPacket()
-    #
-    #     return received_coords
+    def transmit_data(self):
+        # transmit data from gps using emitter
+        coords = self.getGPS()
+        x = coords[0]
+        y = coords[1]
+        bearing = round(self.getBearing())
+        data = struct.pack('ffi',x,y,bearing)
+        self.emitter.send(data)
+        print("\n", "Data transmitted: ", x, y, bearing)
+        self.step(self.stepInt)
+    
+    
+    def receive_data(self):
+        self.step(self.stepInt)
+        received_coords=[]
+        for i in range(3):
+            if self.receiver.getQueueLength() > 0:
+                rec_data = self.receiver.getData()
+                received_data = struct.unpack("ffi", rec_data)
+                received_coords.append(received_data)
+                self.receiver.nextPacket()
+        print("Data Recieved, block at: ", received_coords)
+        if self.name == "Dez":
+            self.queue_dez.append(received_coords)
+            print("Current queue for ",self.name," is: ",self.queue_dez)
+        else:
+            self.queue_troy.append(received_coords)
+            print("Current queue for ",self.name," is: ",self.queue_troy)
+        #return received_coords
 
 
     def isBlockDummy(self):
