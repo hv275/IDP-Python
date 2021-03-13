@@ -38,7 +38,7 @@ class Dez(Robot):
         self.claw.setVelocity(0)
 
         self.distsensors = []
-        sensornames = ["distance_sensor_front","distance_sensor_centre","distance_sensor_back"]
+        sensornames = ["distance_sensor_front", "distance_sensor_centre", "distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
             self.distsensors[i].enable(self.stepInt)
@@ -52,18 +52,21 @@ class Dez(Robot):
         self.comp = self.getDevice("compass")
         self.comp.enable(self.stepInt)
 
-        #light sensors
+        # light sensors
         self.redlight = self.getDevice("light_sensor_red")
         self.redlight.enable(self.stepInt)
 
         self.greenlight = self.getDevice("light_sensor_green")
         self.greenlight.enable(self.stepInt)
 
-        #emitter and receiver
+        # emitter and receiver
         self.emitter = self.getDevice("emitter")
         self.receiver = self.getDevice("receiver")
         self.receiver.enable(self.stepInt)
 
+        # array for storing recieved co-ordinates
+        self.queue_dez = []
+        self.queue_troy = []
 
     def getDist(self):
         out = []
@@ -88,7 +91,7 @@ class Dez(Robot):
 
         for i in enumerate(coords):
             #
-            coords[i[0]] = abs(i[1] * 20 - (i[1] * 20) % self.gridSquare)
+            coords[i[0]] = abs(i[1] * 10 - (i[1] * 10) % self.gridSquare)
         # in place modification
         # this is dumb but I do not have the time for a cleaner fix
         coords.reverse()
@@ -130,20 +133,19 @@ class Dez(Robot):
                     i.setVelocity(0)
                 break
 
-
     def moveBack(self, dist, vel=None):
-            if vel == None:
-                vel = self.defaultSpeed
-            end_time = self.getTime() + (dist / self.wheelRad) / vel
-            while self.step(32) != -1:
-                if self.getTime() < end_time:
-                    for i in self.wheels:
-                        i.setVelocity(-vel)
+        if vel == None:
+            vel = self.defaultSpeed
+        end_time = self.getTime() + (dist / self.wheelRad) / vel
+        while self.step(32) != -1:
+            if self.getTime() < end_time:
+                for i in self.wheels:
+                    i.setVelocity(-vel)
 
-                else:
-                    for i in self.wheels:
-                        i.setVelocity(0)
-                    break
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
+                break
 
     '''redundant fuctions, no longer need but left just in case'''
 
@@ -277,10 +279,9 @@ class Dez(Robot):
         self.leftTurnCompass(30)
         # get coloured components of light
         red_light = self.redlight.getValue()
-        #blue or green?
+        # blue or green?
         green_light = self.greenlight.getValue()
         ambient_light = 333.4
-
 
         if red_light > ambient_light and self.name == "Dez":
             self.rightTurnCompass(30)
@@ -307,30 +308,35 @@ class Dez(Robot):
             return False
 
     '''left until a better time'''
-    # def transmit_data(self):
-    #     # transmit data from gps using emitter
-    #     coords = self.getGPS()
-    #     x = coords[0]
-    #     y = coords[1]
-    #     bearing = round(self.getBearing())
-    #     #emitter requires string to send- convert from list to string
-    #     data = struct.pack('ffi',x,y,bearing)
-    #     self.emitter.send(data)
-    #
-    #
-    # def receive_data(self):
-    #     #receive 3 separate co-ordinates as a string and return list of float co-ordinates
-    #     # webts gives error if queue_length is 0
-    #     received_coords=[]
-    #     for i in range(3):
-    #         received_data = self.receiver.getData()
-    #         # received data is also of type string
-    #         received_coords.append(float(received_data))
-    #         if self.receiver.getQueueLength() > 0:
-    #             self.receiver.nextPacket()
-    #
-    #     return received_coords
 
+    def transmit_data(self):
+        # transmit data from gps using emitter
+        coords = self.getGPS()
+        x = coords[0]
+        y = coords[1]
+        bearing = round(self.getBearing())
+        data = struct.pack('ffi', x, y, bearing)
+        self.emitter.send(data)
+        print("\n", "Data transmitted: ", x, y, bearing)
+        self.step(self.stepInt)
+
+    def receive_data(self):
+        self.step(self.stepInt)
+        received_coords = []
+        for i in range(3):
+            if self.receiver.getQueueLength() > 0:
+                rec_data = self.receiver.getData()
+                received_data = struct.unpack("ffi", rec_data)
+                received_coords.append(received_data)
+                self.receiver.nextPacket()
+        print("Data Recieved, block at: ", received_coords)
+        if self.name == "Dez":
+            self.queue_dez.append(received_coords)
+            print("Current queue for ", self.name, " is: ", self.queue_dez)
+        else:
+            self.queue_troy.append(received_coords)
+            print("Current queue for ", self.name, " is: ", self.queue_troy)
+        # return received_coords
 
     def isBlockDummy(self):
         # for now always return 1
@@ -343,14 +349,14 @@ class Dez(Robot):
         self.moveForward(0.05)
         loc = self.getGPS()
         while self.step(16) != -1:
-            if self.getDist()[0] > 580 or self.getDist()[1] > 580  or self.getDist()[2]>580:
+            if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
                 if self.getGPS()[1] > 20 or self.getGPS()[1] < 3:
                     self.uturn()
                     break
-                if self.getDist()[1] > 800 or self.getDist()[0]>800 or self.getDist()[2]>800:
-                    if self.getDist()[0]>800 and self.getDist()[1] < 100:
+                if self.getDist()[1] > 800 or self.getDist()[0] > 800 or self.getDist()[2] > 800:
+                    if self.getDist()[0] > 800 and self.getDist()[1] < 100:
                         self.leftTurnCompass(30)
-                    if self.getDist()[2]>800 and self.getDist()[1] < 100:
+                    if self.getDist()[2] > 800 and self.getDist()[1] < 100:
                         self.rightTurnCompass(30)
                     if self.isBlock():
                         self.stop()
@@ -358,15 +364,14 @@ class Dez(Robot):
                         self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((14, 20), heuristic="asf")
+                            self.goto((7, 10), heuristic="asf")
                             self.face(90)
                             self.moveArmUp()
-                            self.moveBack(0.25)
                             self.face(270)
                             self.returnToPoint()
                             continue
                         elif self.name == "Troy":
-                            self.goto((30, 24))
+                            self.goto((15, 12))
                             self.face(180)
                             self.moveArmUp()
                             self.returnToPoint()
@@ -379,11 +384,10 @@ class Dez(Robot):
                 break
 
             # may need some coordinate adjustment
-            if loc[0] < 4 and loc[1] < 4 and self.name == "Dez":
-                print("Dez finished sweep")
+            if loc[0] < 3 and loc[1] < 3 and self.name == "Dez":
                 return 1
 
-            elif loc[0] > 38 and loc[1] < 6 and self.name == "Troy":
+            elif loc[0] > 19 and loc[1] < 3 and self.name == "Troy":
                 return 1
 
             else:
@@ -391,20 +395,19 @@ class Dez(Robot):
                     i.setVelocity(3)
 
     def initialise_map(self):
-        self.gridMap = gridmap(48, 48, self.gridSquare)
+        self.gridMap = gridmap(24, 24, self.gridSquare)
 
-    def goto(self, dest, heuristic = "acf"):
+    def goto(self, dest, heuristic="man"):
         start = tuple([math.floor(i) for i in self.getGPS()])
         end = tuple([round(i - i % self.gridSquare) for i in dest])
 
         route = self.gridMap.directions(start, end, heuristic)
         self.lastPath = route
-        self.lastAngle = round(self.getBearing())%360
+        self.lastAngle = round(self.getBearing()) % 360
         for dir in route:
             self.face(dir)
             self.face(dir)
-            self.moveForward(0.06)
-
+            self.moveForward(0.12)
 
     def gotoBearing(self, dest):
         "Cool function but currently broken. Do not use!!!!"
@@ -432,8 +435,6 @@ class Dez(Robot):
             self.face(dir)
             self.moveForward(0.1)
         self.face(self.lastAngle)
-
-
 
     def face(self, direc):
         """Argument has to be a tuple or a bearing"""
@@ -504,5 +505,5 @@ class Dez(Robot):
     def correctBearing(self):
         current = round(self.getBearing())
         base = 90
-        goal = base * round(current/base)
+        goal = base * round(current / base)
         self.face(goal)
