@@ -114,11 +114,8 @@ class Dez(Robot):
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
-                # self.clawhead.setVelocity(-0.15)
             else:
-                # self.clawhead.setVelocity(0)
                 self.claw.setVelocity(0)
-                # self.clawhead.setVelocity(0)
                 break
 
     def moveForward(self, dist, vel=None):
@@ -228,8 +225,7 @@ class Dez(Robot):
 
 
     def leftTurnCompass(self, angle=90, vel=None):
-        # it may go around more than once
-        # that is fine, I do not have the time to properly fix it
+        # bad code that semi works
         start = round(self.getBearing()) % 360
         base = 5
         start = base * round(start / base)
@@ -248,7 +244,7 @@ class Dez(Robot):
                 else:
                     for i in self.wheels:
                         i.setVelocity(0)
-                    self.correctBearing(5)
+                    self.correctBearing(10)
                     break
         else:
             while self.step(1) != 1:
@@ -260,7 +256,7 @@ class Dez(Robot):
                 else:
                     for i in self.wheels:
                         i.setVelocity(0)
-                    self.correctBearing(5)
+                    self.correctBearing(10)
                     break
 
     # def moveForwardEncoded(self,dist):
