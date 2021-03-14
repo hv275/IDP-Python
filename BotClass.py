@@ -187,77 +187,50 @@ class Dez(Robot):
     #             break
 
     def rightTurnCompass(self, angle=90, vel=None):
-        # ok so this is terrible badness
-        # but it is terrible badness that works :)
+        # it may go around more than once
+        # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-        base = 5
-        start = base * round(start / base)
+
         end = (start + angle) % 360
+
         if vel == None:
-            vel = self.defaultSpeed
-        if end == 0:
+            # am artifically slowing it down
+            vel = 1
 
-            while self.step(16) != 1:
-                bearing = round(self.getBearing()) % 360
+        while self.step(16) != 1:
+            bearing = round(self.getBearing()) % 360
 
-                if bearing > 2:
-                    self.wheels[0].setVelocity(vel)
-                    self.wheels[1].setVelocity(-vel)
+            if bearing != end:
+                self.wheels[0].setVelocity(vel)
+                self.wheels[1].setVelocity(-vel)
 
-                else:
-                    for i in self.wheels:
-                        i.setVelocity(0)
-                    self.correctBearing(5)
-                    break
-        else:
-            while self.step(16) != 1:
-                bearing = round(self.getBearing()) % 360
-
-                if bearing <= end:
-                    self.wheels[0].setVelocity(vel)
-                    self.wheels[1].setVelocity(-vel)
-
-                else:
-                    for i in self.wheels:
-                        i.setVelocity(0)
-                        self.correctBearing(10)
-                    break
-
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
+                break
 
     def leftTurnCompass(self, angle=90, vel=None):
-        # bad code that semi works
+        # it may go around more than once
+        # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-        base = 5
-        start = base * round(start / base)
+
         end = (start + 360 - angle) % 360
-        print(end)
+
         if vel == None:
             # artificially
-            vel = self.defaultSpeed
-        if end == 270:
-            while self.step(1) != 1:
-                bearing = (round(self.getBearing())+359) % 360
-                if bearing-3 > end:
-                    self.wheels[0].setVelocity(-vel)
-                    self.wheels[1].setVelocity(+vel)
+            vel = 1
 
-                else:
-                    for i in self.wheels:
-                        i.setVelocity(0)
-                    self.correctBearing(10)
-                    break
-        else:
-            while self.step(1) != 1:
-                bearing = round(self.getBearing()) % 360
-                if bearing > (end+4) % 360:
-                    self.wheels[0].setVelocity(-vel)
-                    self.wheels[1].setVelocity(+vel)
+        while self.step(1) != 1:
+            bearing = round(self.getBearing()) % 360
 
-                else:
-                    for i in self.wheels:
-                        i.setVelocity(0)
-                    self.correctBearing(10)
-                    break
+            if bearing != end:
+                self.wheels[0].setVelocity(-vel)
+                self.wheels[1].setVelocity(+vel)
+
+            else:
+                for i in self.wheels:
+                    i.setVelocity(0)
+                break
 
     # def moveForwardEncoded(self,dist):
     #     lpos = self.leftcoder.getValue()
@@ -288,12 +261,12 @@ class Dez(Robot):
         # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.11)
+            self.moveForward(0.1)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.11)
+            self.moveForward(0.1)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -407,6 +380,7 @@ class Dez(Robot):
         loc = self.getGPS()
         while self.step(16) != -1:
             if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
+                self.stop()
                 if self.getGPS()[1] > 40 or self.getGPS()[1] < 3:
                     self.uturn()
                     break
@@ -504,11 +478,6 @@ class Dez(Robot):
         dirToAngle = {(0, 1): 0, (0, -1): 180, (1, 0): 90, (-1, 0): 270}
 
         bearing = round(self.getBearing()) % 360
-        """--------------------------------------------------------------------------------------"""
-        """be careful with this rounding"""
-        base = 1
-        bearing = base * round(bearing / base)
-        """--------------------------------------------------------------------------------------"""
         if type(direc) == tuple:
             targetAngle = dirToAngle[direc]
         else:
