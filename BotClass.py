@@ -196,21 +196,19 @@ class Dez(Robot):
         start = base * round(start / base)
         end = (start + angle) % 360
         if vel == None:
-            # am artifically slowing it down
             vel = self.defaultSpeed
         if end == 0:
 
             while self.step(16) != 1:
                 bearing = round(self.getBearing()) % 360
 
-                if bearing > 3:
+                if bearing > 2:
                     self.wheels[0].setVelocity(vel)
                     self.wheels[1].setVelocity(-vel)
 
                 else:
                     for i in self.wheels:
                         i.setVelocity(0)
-                    print("done")
                     self.correctBearing(5)
                     break
         else:
@@ -224,7 +222,7 @@ class Dez(Robot):
                 else:
                     for i in self.wheels:
                         i.setVelocity(0)
-                        self.correctBearing(5)
+                        self.correctBearing(10)
                     break
 
 
@@ -293,12 +291,12 @@ class Dez(Robot):
         # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.11, 3)
+            self.moveForward(0.11)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.11, 3)
+            self.moveForward(0.11)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -386,9 +384,9 @@ class Dez(Robot):
                     break
                 if self.getDist()[1] > 850 or self.getDist()[0] > 850 or self.getDist()[2] > 850:
                     if self.getDist()[0] > 850 and self.getDist()[1] < 100:
-                        self.leftTurnCompass(30)
+                        self.leftTurnCompass(20)
                     if self.getDist()[2] > 850 and self.getDist()[1] < 100:
-                        self.rightTurnCompass(30)
+                        self.rightTurnCompass(20)
                     if self.isBlock():
                         self.stop()
                         self.moveArmDown()
@@ -402,8 +400,9 @@ class Dez(Robot):
                             self.returnToPoint()
                             continue
                         elif self.name == "Troy":
-                            self.goto((15, 12))
-                            self.face(180)
+                            self.goto((35, 22))
+                            self.face(270)
+                            self.moveForward(0.25)
                             self.moveArmUp()
                             self.moveBack(0.25)
                             self.returnToPoint()
@@ -429,7 +428,7 @@ class Dez(Robot):
     def initialise_map(self):
         self.gridMap = gridmap(44, 44, self.gridSquare)
 
-    def goto(self, dest, heuristic="man"):
+    def goto(self, dest, heuristic="acf"):
         start = tuple([math.floor(i) for i in self.getGPS()])
         end = tuple([round(i - i % self.gridSquare) for i in dest])
 
@@ -439,7 +438,7 @@ class Dez(Robot):
         for dir in route:
             self.face(dir)
             self.face(dir)
-            self.moveForward(0.12)
+            self.moveForward(0.06)
 
     def gotoBearing(self, dest):
         "Cool function but currently broken. Do not use!!!!"
@@ -465,7 +464,7 @@ class Dez(Robot):
         route.reverse()
         for dir in route:
             self.face(dir)
-            self.moveForward(0.1)
+            self.moveForward(0.06)
         self.face(self.lastAngle)
 
     def face(self, direc):
@@ -479,17 +478,13 @@ class Dez(Robot):
         bearing = round(self.getBearing()) % 360
         """--------------------------------------------------------------------------------------"""
         """be careful with this rounding"""
-        base = 3
+        base = 1
         bearing = base * round(bearing / base)
         """--------------------------------------------------------------------------------------"""
         if type(direc) == tuple:
             targetAngle = dirToAngle[direc]
         else:
             targetAngle = round(direc) % 360
-
-        print(targetAngle)
-        print((360 + (targetAngle - bearing)) % 360)
-        # code below uses some serious abuse of modulo operator
         if (360 + (targetAngle - bearing)) % 360 >= 180:
             # rotate clockwise
             while self.step(16) != 1:
