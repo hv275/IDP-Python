@@ -26,7 +26,6 @@ robot.init()
 
 
 
-
 while robot.step(timestep) != -1:
 
     #use for repeated things
@@ -46,6 +45,7 @@ while robot.step(timestep) != -1:
             robot.goto((14,20))
         elif robot.name ==  "Troy":
             robot.goto((30,24))
+
 
 
 

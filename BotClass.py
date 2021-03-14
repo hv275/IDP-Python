@@ -37,8 +37,8 @@ class Dez(Robot):
         self.claw.setPosition(float("inf"))
         self.claw.setVelocity(0)
 
-        self.distsensors = []
-        sensornames = ["distance_sensor_front", "distance_sensor_centre", "distance_sensor_back"]
+        self.distsensors = [] 
+        sensornames = ["distance_sensor_front","distance_sensor_centre",  "distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
             self.distsensors[i].enable(self.stepInt)
@@ -67,6 +67,7 @@ class Dez(Robot):
         # array for storing recieved co-ordinates
         self.queue_dez = []
         self.queue_troy = []
+
 
     def getDist(self):
         out = []
@@ -368,6 +369,37 @@ class Dez(Robot):
             self.queue_troy.append(received_coords)
             print("Current queue for ", self.name, " is: ", self.queue_troy)
         # return received_coords
+    
+
+    def detect_collision(self):
+        if self.name == "Dez":
+            self.transmit_data()
+        if self.name == "Troy":
+            self.step(self.stepInt)
+            if self.receiver.getQueueLength() > 0:
+                rec_data = self.receiver.getData()
+                received_data = struct.unpack("ffi", rec_data)
+            dez_coords = received_data[:2]
+            troy_coords = self.getGPS()[:2]
+            # print(dez_coords)
+            # print(troy_coords)
+            # print(len(dez_coords))
+            # print(len(troy_coords))
+
+            distance = ((dez_coords[0] - troy_coords[0])**2 + (dez_coords[1] - troy_coords[1])**2 )**(1/2)
+            print(distance)
+            if distance < 3:
+                self.avoid_collision()
+                return True
+            else:
+                return False
+
+    def avoid_collision(self):
+        if self.name == "Troy":
+            self.stop()
+        else:
+            pass
+
 
     def isBlockDummy(self):
         # for now always return 1
