@@ -132,6 +132,7 @@ class Dez(Robot):
             vel = self.defaultSpeed
         end_time = self.getTime() + (dist / self.wheelRad) / vel
         while self.step(32) != -1:
+            self.detect_collision()
             if self.getTime() < end_time:
                 for i in self.wheels:
                     i.setVelocity(vel)
@@ -146,6 +147,7 @@ class Dez(Robot):
             vel = self.defaultSpeed
         end_time = self.getTime() + (dist / self.wheelRad) / vel
         while self.step(32) != -1:
+            self.detect_collision()
             if self.getTime() < end_time:
                 for i in self.wheels:
                     i.setVelocity(-vel)
@@ -198,7 +200,10 @@ class Dez(Robot):
     def rightTurnCompass(self, angle=90, vel=None):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
+
         start = round(self.getBearing()) % 360
+
+
 
         end = (start + angle) % 360
 
@@ -208,7 +213,6 @@ class Dez(Robot):
 
         while self.step(16) != 1:
             bearing = round(self.getBearing()) % 360
-
             if bearing != end:
                 self.wheels[0].setVelocity(vel)
                 self.wheels[1].setVelocity(-vel)
@@ -284,36 +288,48 @@ class Dez(Robot):
         # probably just check for led with camera
         self.moveArmDown()
         self.moveForward(0.03)
-        self.leftTurnCompass(30)
+        self.leftTurnCompass(20)
         # get coloured components of light
         red_light = self.redlight.getValue()
         # blue or green?
         green_light = self.greenlight.getValue()
         ambient_light = 333.4
 
-        if red_light > ambient_light and self.name == "Dez":
-            self.rightTurnCompass(30)
+        if red_light > ambient_light and green_light<ambient_light and self.name == "Dez":
+            self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
             print("Red Block Detected, attempting delivery")
             return True
 
-        if green_light > ambient_light and self.name == "Troy":
-            self.rightTurnCompass(30)
+        if green_light > ambient_light and red_light < ambient_light and self.name == "Troy":
+            self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
             print("Green Block Detected, attempting delivery")
             return True
 
-        else:
+        elif green_light > ambient_light and red_light < ambient_light and self.name == "Dez":
             self.rightTurnCompass(20)
             self.moveBack(0.03)
             self.moveArmUp()
-            if self.name == "Dez":
-                print("Green Colour detected, location information sent")
-            elif self.name == "Troy":
-                print("Red Colour detected, location information sent")
+            print("Green Block Detected, location info sent")
             return False
+
+        elif red_light > ambient_light and green_light<ambient_light and self.name == "Troy":
+            self.rightTurnCompass(20)
+            self.moveBack(0.03)
+            self.moveArmUp()
+            print("Red Block Detected, location info sent")
+            return False
+
+        else:
+            print("sensor issue, retrying")
+            self.rightTurnCompass(30)
+            self.moveBack(0.03)
+            self.moveArmUp()
+
+            return self.isBlock()
 
     '''left until a better time'''
 
@@ -368,7 +384,8 @@ class Dez(Robot):
 
             distance = ((dez_coords[0] - troy_coords[0])**2 + (dez_coords[1] - troy_coords[1])**2 )**(1/2)
             print(distance)
-            if distance < 10:
+            if distance < 10 and self.name == "Troy":
+                self.stop()
                 return True
             else:
                 return False
@@ -410,19 +427,20 @@ class Dez(Robot):
                     break
                 if self.getDist()[1] > 850 or self.getDist()[0] > 850 or self.getDist()[2] > 850:
                     if self.getDist()[0] > 850 and self.getDist()[1] < 100:
-                        self.leftTurnCompass(20)
+                        self.leftTurnCompass(30)
                     if self.getDist()[2] > 850 and self.getDist()[1] < 100:
-                        self.rightTurnCompass(20)
+                        self.rightTurnCompass(30)
                     if self.isBlock():
                         self.stop()
                         self.moveArmDown()
                         self.correctBearing()
                         if self.name == "Dez":
                             print("Dez returning")
-                            self.goto((14, 24), heuristic="acf")
+                            self.goto((11, 23), heuristic="acf")
                             self.face(90)
+                            self.moveForward(0.25)
                             self.moveArmUp()
-                            self.face(270)
+                            self.moveBack(0.25)
                             self.returnToPoint()
                             continue
                         elif self.name == "Troy":

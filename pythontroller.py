@@ -40,11 +40,11 @@ while robot.step(timestep) != -1:
             robot.goto((30,22))
             break
     elif robot.sweep() and robot.name == "Dez":
-        robot.goto((12, 20), heuristic="acf")
+        robot.goto((12, 22), heuristic="acf")
         robot.face(90)
         break
     elif robot.sweep() and robot.name == "Troy":
-        robot.goto((31, 20), heuristic="acf")
+        robot.goto((32, 22), heuristic="acf")
         robot.face(270)
         break
 
