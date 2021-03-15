@@ -16,7 +16,7 @@ class Dez(Robot):
         self.stepInt = 32
         self.name = self.getName()
         self.direc = "n"
-        self.defaultSpeed = 5
+        self.defaultSpeed = 6
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
@@ -37,7 +37,7 @@ class Dez(Robot):
         self.claw.setPosition(float("inf"))
         self.claw.setVelocity(0)
 
-        self.distsensors = [] 
+        self.distsensors = []
         sensornames = ["distance_sensor_front","distance_sensor_centre",  "distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
@@ -64,9 +64,18 @@ class Dez(Robot):
         self.receiver = self.getDevice("receiver")
         self.receiver.enable(self.stepInt)
 
+        if self.name == "Dez":
+            self.emitter.setChannel(1)
+            self.receiver.setChannel(2)
+        elif self.name == "Troy":
+            self.emitter.setChannel(2)
+            self.receiver.setChannel(1)
+
         # array for storing recieved co-ordinates
         self.queue_dez = []
         self.queue_troy = []
+
+        self.sweepCounter = 0
 
 
     def getDist(self):
@@ -255,18 +264,18 @@ class Dez(Robot):
         self.leftTurnCompass(angle=45)
         print("Initialisation complete")
 
-    def uturn(self):
+    def uturn(self, dist = 0.1535):
         for i in self.wheels:
             i.setVelocity(0)
         # warning - this is valid for both robots (kinda)
         if self.direc == "n":
             self.leftTurnCompass()
-            self.moveForward(0.1)
+            self.moveForward(dist)
             self.leftTurnCompass()
             self.direc = "s"
         elif self.direc == "s":
             self.rightTurnCompass()
-            self.moveForward(0.1)
+            self.moveForward(dist)
             self.rightTurnCompass()
             self.direc = "n"
 
@@ -336,7 +345,7 @@ class Dez(Robot):
             self.queue_troy.append(received_coords)
             print("Current queue for ", self.name, " is: ", self.queue_troy)
         # return received_coords
-    
+
 
     def detect_collision(self):
         if self.name == "Dez":
@@ -346,6 +355,9 @@ class Dez(Robot):
             if self.receiver.getQueueLength() > 0:
                 rec_data = self.receiver.getData()
                 received_data = struct.unpack("ffi", rec_data)
+            else:
+                received_data = [0, 0,0]
+            print(received_data)
             dez_coords = received_data[:2]
             troy_coords = self.getGPS()[:2]
             # print(dez_coords)
@@ -355,7 +367,7 @@ class Dez(Robot):
 
             distance = ((dez_coords[0] - troy_coords[0])**2 + (dez_coords[1] - troy_coords[1])**2 )**(1/2)
             print(distance)
-            if distance < 3:
+            if distance < 6:
                 self.avoid_collision()
                 return True
             else:
@@ -376,12 +388,26 @@ class Dez(Robot):
     def sweep(self):
         # arbitrary dist - change based on sensor
         self.correctBearing()
-        self.moveForward(0.05)
+        self.moveForward(0.025)
         loc = self.getGPS()
         while self.step(16) != -1:
+            self.detect_collision()
             if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
-                self.stop()
                 if self.getGPS()[1] > 40 or self.getGPS()[1] < 3:
+                    self.sweepCounter += 1
+                    print(str(self.name) + str(self.sweepCounter))
+                    if self.sweepCounter == 8 and self.name == "Troy":
+                        print("Troy finished sweep")
+                        return 1
+                    if self.sweepCounter == 8 and self.name == "Dez":
+                        self.uturn(0.1)
+                        print("tiny u turn")
+                        break
+                    if self.sweepCounter == 9 and self.name == "Dez":
+                        print("Dez finished sweep")
+                        return 1
+
+
                     self.uturn()
                     break
                 if self.getDist()[1] > 850 or self.getDist()[0] > 850 or self.getDist()[2] > 850:
@@ -415,20 +441,12 @@ class Dez(Robot):
                         self.bypassBlock()
                         continue
                 break
-
             # may need some coordinate adjustment
-            if loc[0] < 3 and loc[1] < 3 and self.name == "Dez":
-                return 1
-
-            elif loc[0] > 19 and loc[1] < 3 and self.name == "Troy":
-                return 1
-
-            else:
-                for i in self.wheels:
-                    i.setVelocity(3)
+            for i in self.wheels:
+                i.setVelocity(self.defaultSpeed)
 
     def initialise_map(self):
-        self.gridMap = gridmap(44, 44, self.gridSquare)
+        self.gridMap = gridmap(45, 45, self.gridSquare)
 
     def goto(self, dest, heuristic="acf"):
         start = tuple([math.floor(i) for i in self.getGPS()])
