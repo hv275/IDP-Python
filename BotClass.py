@@ -355,8 +355,9 @@ class Dez(Robot):
             if self.receiver.getQueueLength() > 0:
                 rec_data = self.receiver.getData()
                 received_data = struct.unpack("ffi", rec_data)
+                self.receiver.nextPacket()
             else:
-                received_data = [0, 0,0]
+                received_data = [0, 0, 0]
             print(received_data)
             dez_coords = received_data[:2]
             troy_coords = self.getGPS()[:2]
@@ -367,15 +368,14 @@ class Dez(Robot):
 
             distance = ((dez_coords[0] - troy_coords[0])**2 + (dez_coords[1] - troy_coords[1])**2 )**(1/2)
             print(distance)
-            if distance < 6:
-                self.avoid_collision()
+            if distance < 10:
                 return True
             else:
                 return False
 
     def avoid_collision(self):
         if self.name == "Troy":
-            self.stop()
+            return 1
         else:
             pass
 
@@ -388,10 +388,8 @@ class Dez(Robot):
     def sweep(self):
         # arbitrary dist - change based on sensor
         self.correctBearing()
-        self.moveForward(0.025)
         loc = self.getGPS()
         while self.step(16) != -1:
-            self.detect_collision()
             if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
                 if self.getGPS()[1] > 40 or self.getGPS()[1] < 3:
                     self.sweepCounter += 1
@@ -442,8 +440,11 @@ class Dez(Robot):
                         continue
                 break
             # may need some coordinate adjustment
-            for i in self.wheels:
-                i.setVelocity(self.defaultSpeed)
+            if self.detect_collision() and self.name == "Troy":
+                self.stop()
+            else:
+                for i in self.wheels:
+                    i.setVelocity(self.defaultSpeed)
 
     def initialise_map(self):
         self.gridMap = gridmap(45, 45, self.gridSquare)
