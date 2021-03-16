@@ -16,7 +16,7 @@ class Dez(Robot):
         self.stepInt = 32
         self.name = self.getName()
         self.direc = "n"
-        self.defaultSpeed = 6
+        self.defaultSpeed = 8
         self.gridMap = None
         self.gridSquare = 1
         self.lastPath = None
@@ -38,7 +38,7 @@ class Dez(Robot):
         self.claw.setVelocity(0)
 
         self.distsensors = []
-        sensornames = ["distance_sensor_front","distance_sensor_centre",  "distance_sensor_back"]
+        sensornames = ["distance_sensor_front", "distance_sensor_centre", "distance_sensor_back"]
         for i in range(len(sensornames)):
             self.distsensors.append(self.getDevice(sensornames[i]))
             self.distsensors[i].enable(self.stepInt)
@@ -53,11 +53,21 @@ class Dez(Robot):
         self.comp.enable(self.stepInt)
 
         # light sensors
-        self.redlight = self.getDevice("light_sensor_red")
-        self.redlight.enable(self.stepInt)
-
-        self.greenlight = self.getDevice("light_sensor_green")
-        self.greenlight.enable(self.stepInt)
+        self.greenlightsensors_names = ["light_sensor_green", "light_sensor_green(1)", "light_sensor_green(2)",
+                                                                                       "light_sensor_green(3)",
+                                        "light_sensor_green(4)", "light_sensor_green(5)", "light_sensor_green(6)",
+                                        "light_sensor_green(7)"]
+        self.redlightsensors_names = ["light_sensor_red", "light_sensor_red(1)", "light_sensor_red(2)",
+                                      "light_sensor_red(3)", "light_sensor_red(4)", "light_sensor_red(5)",
+                                      "light_sensor_red(6)", "light_sensor_red(7)"]
+        self.redlightsensors = []
+        self.greenlightsensors = []
+        for i in range(len(self.redlightsensors_names)):
+            self.redlightsensors.append(self.getDevice(self.redlightsensors_names[i]))
+            self.redlightsensors[i].enable(self.stepInt)
+        for i in range(len(self.greenlightsensors_names)):
+            self.greenlightsensors.append(self.getDevice(self.greenlightsensors_names[i]))
+            self.greenlightsensors[i].enable(self.stepInt)
 
         # emitter and receiver
         self.emitter = self.getDevice("emitter")
@@ -77,6 +87,7 @@ class Dez(Robot):
 
         self.sweepCounter = 0
 
+        self.timeflag = 0
 
     def getDist(self):
         out = []
@@ -90,7 +101,6 @@ class Dez(Robot):
         bearing = (rad - 1.5708) / math.pi * 180
         if bearing < 0:
             bearing += 360
-
 
         return bearing
 
@@ -109,7 +119,7 @@ class Dez(Robot):
         return coords
 
     def moveArmDown(self):
-        end_time = self.getTime() + 1.8
+        end_time = self.getTime() + 2
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(0.2)
@@ -119,7 +129,7 @@ class Dez(Robot):
                 break
 
     def moveArmUp(self):
-        end_time = self.getTime() + 1.8
+        end_time = self.getTime() + 2
         while self.step(32) != 1:
             if self.getTime() < end_time:
                 self.claw.setVelocity(-0.2)
@@ -203,17 +213,21 @@ class Dez(Robot):
 
         start = round(self.getBearing()) % 360
 
-
-
         end = (start + angle) % 360
 
         if vel == None:
             # am artifically slowing it down
-            vel = 1
-
+            vel = 0.95
+        start_time = self.getTime()
         while self.step(16) != 1:
             bearing = round(self.getBearing()) % 360
-            if bearing != end:
+            if self.getTime() > start_time + 20:
+                self.moveArmUp()
+                self.moveBack(0.2)
+                self.moveArmDown()
+                self.correctBearing(180)
+                break
+            elif bearing != end:
                 self.wheels[0].setVelocity(vel)
                 self.wheels[1].setVelocity(-vel)
 
@@ -226,19 +240,26 @@ class Dez(Robot):
         # it may go around more than once
         # that is fine, I do not have the time to properly fix it
         start = round(self.getBearing()) % 360
-
+        start_time = self.getTime()
         end = (start + 360 - angle) % 360
 
         if vel == None:
             # artificially
-            vel = 1
+            vel = 0.95
 
         while self.step(1) != 1:
             bearing = round(self.getBearing()) % 360
+            if self.getTime() > start_time + 20:
+                self.moveArmUp()
+                self.moveBack(0.2)
+                self.moveArmDown()
+                self.correctBearing(180)
+                break
 
-            if bearing != end:
+            elif bearing != end:
                 self.wheels[0].setVelocity(-vel)
                 self.wheels[1].setVelocity(+vel)
+
 
             else:
                 for i in self.wheels:
@@ -268,7 +289,7 @@ class Dez(Robot):
         self.leftTurnCompass(angle=45)
         print("Initialisation complete")
 
-    def uturn(self, dist = 0.1535):
+    def uturn(self, dist=0.1535):
         for i in self.wheels:
             i.setVelocity(0)
         # warning - this is valid for both robots (kinda)
@@ -286,50 +307,60 @@ class Dez(Robot):
     def isBlock(self):
         # code to check if it is a block
         # probably just check for led with camera
-        self.moveArmDown()
-        self.moveForward(0.03)
-        self.leftTurnCompass(20)
+        # self.moveArmDown()
+        # self.moveForward(0.02)
+        # self.moveBack(0.03)
+        # self.leftTurnCompass(20)
         # get coloured components of light
-        red_light = self.redlight.getValue()
-        # blue or green?
-        green_light = self.greenlight.getValue()
-        ambient_light = 333.4
+        self.moveArmDown()
+        self.moveForward(0.13)
+        self.leftTurnCompass(30)
+        ambient_light = 333.8
 
-        if red_light > ambient_light and green_light<ambient_light and self.name == "Dez":
-            self.rightTurnCompass(20)
-            self.moveBack(0.03)
-            self.moveArmUp()
-            print("Red Block Detected, attempting delivery")
-            return True
+        for i in self.redlightsensors:
+            for j in self.greenlightsensors:
+                if i.getValue() > j.getValue() and i.getValue() > ambient_light and self.name == "Dez":
+                    print(f"Red: {i.getValue()}")
+                    print(f"Green: {j.getValue()}")
+                    self.rightTurnCompass(30)
+                    self.moveBack(0.1)
+                    self.moveArmUp()
+                    print("Red Block Detected, attempting delivery")
+                    return True
 
-        if green_light > ambient_light and red_light < ambient_light and self.name == "Troy":
-            self.rightTurnCompass(20)
-            self.moveBack(0.03)
-            self.moveArmUp()
-            print("Green Block Detected, attempting delivery")
-            return True
+                if j.getValue() > i.getValue() and j.getValue() > ambient_light and self.name == "Troy":
+                    print(f"Red: {i.getValue()}")
+                    print(f"Green: {j.getValue()}")
+                    self.rightTurnCompass(30)
+                    self.moveBack(0.1)
+                    self.moveArmUp()
+                    print("Green Block Detected, attempting delivery")
+                    return True
 
-        elif green_light > ambient_light and red_light < ambient_light and self.name == "Dez":
-            self.rightTurnCompass(20)
-            self.moveBack(0.03)
-            self.moveArmUp()
-            print("Green Block Detected, location info sent")
-            return False
+                elif j.getValue() > i.getValue() and j.getValue() > ambient_light and self.name == "Dez":
+                    print(f"Red: {i.getValue()}")
+                    print(f"Green: {j.getValue()}")
+                    self.rightTurnCompass(30)
+                    self.moveBack(0.1)
+                    self.moveArmUp()
+                    print("Green Block Detected, location info sent")
+                    return False
 
-        elif red_light > ambient_light and green_light<ambient_light and self.name == "Troy":
-            self.rightTurnCompass(20)
-            self.moveBack(0.03)
-            self.moveArmUp()
-            print("Red Block Detected, location info sent")
-            return False
+                elif i.getValue() > j.getValue() and i.getValue() > ambient_light and self.name == "Troy":
+                    print(f"Red: {i.getValue()}")
+                    print(f"Green: {j.getValue()}")
+                    self.rightTurnCompass(30)
+                    self.moveBack(0.1)
+                    self.moveArmUp()
+                    print("Red Block Detected, location info sent")
+                    return False
 
-        else:
-            print("sensor issue, retrying")
-            self.rightTurnCompass(30)
-            self.moveBack(0.03)
-            self.moveArmUp()
-
-            return self.isBlock()
+                else:
+                    continue
+        self.rightTurnCompass(30)
+        self.moveBack(0.1)
+        self.moveArmUp()
+        return False
 
     '''left until a better time'''
 
@@ -341,7 +372,6 @@ class Dez(Robot):
         bearing = round(self.getBearing())
         data = struct.pack('ffi', x, y, bearing)
         self.emitter.send(data)
-        print("\n", "Data transmitted: ", x, y, bearing)
         self.step(self.stepInt)
 
     def receive_data(self):
@@ -353,7 +383,6 @@ class Dez(Robot):
                 received_data = struct.unpack("ffi", rec_data)
                 received_coords.append(received_data)
                 self.receiver.nextPacket()
-        print("Data Recieved, block at: ", received_coords)
         if self.name == "Dez":
             self.queue_dez.append(received_coords)
             print("Current queue for ", self.name, " is: ", self.queue_dez)
@@ -361,7 +390,6 @@ class Dez(Robot):
             self.queue_troy.append(received_coords)
             print("Current queue for ", self.name, " is: ", self.queue_troy)
         # return received_coords
-
 
     def detect_collision(self):
         if self.name == "Dez":
@@ -374,7 +402,6 @@ class Dez(Robot):
                 self.receiver.nextPacket()
             else:
                 received_data = [0, 0, 0]
-            print(received_data)
             dez_coords = received_data[:2]
             troy_coords = self.getGPS()[:2]
             # print(dez_coords)
@@ -382,8 +409,7 @@ class Dez(Robot):
             # print(len(dez_coords))
             # print(len(troy_coords))
 
-            distance = ((dez_coords[0] - troy_coords[0])**2 + (dez_coords[1] - troy_coords[1])**2 )**(1/2)
-            print(distance)
+            distance = ((dez_coords[0] - troy_coords[0]) ** 2 + (dez_coords[1] - troy_coords[1]) ** 2) ** (1 / 2)
             if distance < 10 and self.name == "Troy":
                 self.stop()
                 return True
@@ -395,7 +421,6 @@ class Dez(Robot):
             return 1
         else:
             pass
-
 
     def isBlockDummy(self):
         # for now always return 1
@@ -410,26 +435,24 @@ class Dez(Robot):
             if self.getDist()[0] > 580 or self.getDist()[1] > 580 or self.getDist()[2] > 580:
                 if self.getGPS()[1] > 40 or self.getGPS()[1] < 3:
                     self.sweepCounter += 1
-                    print(str(self.name) + str(self.sweepCounter))
                     if self.sweepCounter == 8 and self.name == "Troy":
                         print("Troy finished sweep")
                         return 1
                     if self.sweepCounter == 8 and self.name == "Dez":
                         self.uturn(0.1)
-                        print("tiny u turn")
                         break
-                    if self.sweepCounter == 9 and self.name == "Dez":
+                    if self.sweepCounter == 9 and self.name == "Dez" or self.name == "Dez" and self.getGPS()[0] < 3 and \
+                            self.getGPS()[1] > 42:
                         print("Dez finished sweep")
                         return 1
-
 
                     self.uturn()
                     break
                 if self.getDist()[1] > 850 or self.getDist()[0] > 850 or self.getDist()[2] > 850:
                     if self.getDist()[0] > 850 and self.getDist()[1] < 100:
-                        self.leftTurnCompass(30)
+                        self.leftTurnCompass(25)
                     if self.getDist()[2] > 850 and self.getDist()[1] < 100:
-                        self.rightTurnCompass(30)
+                        self.rightTurnCompass(25)
                     if self.isBlock():
                         self.stop()
                         self.moveArmDown()
@@ -504,6 +527,10 @@ class Dez(Robot):
         for dir in route:
             self.face(dir)
             self.moveForward(0.06)
+            if self.getTime() > 245:
+                self.moveBack(0.2)
+                break
+
         self.face(self.lastAngle)
 
     def face(self, direc):
@@ -548,31 +575,63 @@ class Dez(Robot):
         # todo check that there is not another block begins
         if round(self.getBearing()) == 180:
             self.moveBack(0.05)
-            self.leftTurnCompass(angle=60)
+            if self.getTime() > 220:
+                return
+            self.leftTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
             self.moveForward(0.2)
-            self.rightTurnCompass(angle=60)
-            self.moveForward(0.1)
-            self.rightTurnCompass(angle=60)
+            if self.getTime() > 220:
+                return
+            self.rightTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
+            self.moveForward(0.4)
+            if self.getTime() > 220:
+                return
+            self.rightTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
             self.moveForward(0.2)
+            if self.getTime() > 220:
+                return
             self.leftTurnCompass(60)
+            if self.getTime() > 220:
+                return
             self.correctBearing()
         else:
             self.moveBack(0.05)
-            self.leftTurnCompass(angle=60)
+            if self.getTime() > 220:
+                return
+            self.leftTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
             self.moveForward(0.2)
-            self.rightTurnCompass(angle=60)
+            if self.getTime() > 220:
+                return
+            self.rightTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
+            self.moveForward(0.4)
+            if self.getTime() > 220:
+                return
+            self.rightTurnCompass(angle=90)
+            if self.getTime() > 220:
+                return
             self.moveForward(0.2)
-            self.rightTurnCompass(angle=60)
-            self.moveForward(0.2)
-            self.leftTurnCompass(60)
+            if self.getTime() > 220:
+                return
+            self.leftTurnCompass(90)
+            if self.getTime() > 220:
+                return
             self.correctBearing()
 
     def stop(self):
         for i in self.wheels:
             i.setVelocity(0)
 
-    def correctBearing(self, base = 90):
+    def correctBearing(self, base=90):
         current = round(self.getBearing())
-        goal = base * round(current/base)
-        #note, it uses its own turning code
+        goal = base * round(current / base)
+        # note, it uses its own turning code
         self.face(goal)

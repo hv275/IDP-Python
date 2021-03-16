@@ -31,20 +31,21 @@ while robot.step(timestep) != -1:
     #use for repeated things
     #may need changing for the cooperation of the robots
     #self note of home positions: Dez : (6,10) ish, Troy: (18,9)ish
+    # print(robot.isBlock())
 
-    if robot.getTime() > 270:
+    if robot.getTime() > 220:
         if robot.name == "Dez":
-            robot.goto((15,20))
+            robot.goto((15,19))
             break
         elif robot.name ==  "Troy":
-            robot.goto((30,22))
+            robot.goto((28,19))
             break
     elif robot.sweep() and robot.name == "Dez":
-        robot.goto((12, 22), heuristic="acf")
+        robot.goto((12, 19), heuristic="acf")
         robot.face(90)
         break
     elif robot.sweep() and robot.name == "Troy":
-        robot.goto((32, 22), heuristic="acf")
+        robot.goto((32, 19), heuristic="acf")
         robot.face(270)
         break
 
